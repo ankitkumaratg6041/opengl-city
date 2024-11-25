@@ -12,3 +12,6 @@
 
 # Build artifacts
 /build/
+
+# Secret keys
+*.env
