@@ -1,0 +1,14 @@
+# Compiled object files
+*.o
+
+# Output files
+*.out
+
+# Logs
+*.log
+
+# Backup files
+*~
+
+# Build artifacts
+/build/
