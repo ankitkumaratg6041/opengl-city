@@ -26,6 +26,11 @@ Cuboid.o: Cuboid.cc Cuboid.h
 InitShader.o: common/InitShader.cc
 	$(CC) $(CFLAGS) -c common/InitShader.cc -o InitShader.o
 
+# Run memory checks with Valgrind
+check: main
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose ./main
+
+
 # Clean rule to remove all generated files
 clean:
 	rm -f $(TARGET) *.o *~
