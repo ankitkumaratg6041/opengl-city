@@ -6,6 +6,26 @@ const int face[6][4] = {
     {1, 2, 6, 5}, {0, 3, 7, 4}
 };
 
+Cuboid::Cuboid() {
+    vec4 defaultPoints[8] = {
+        vec4(-0.5, -0.5, -0.5, 1.0), vec4(0.5, -0.5, -0.5, 1.0),
+        vec4(0.5, 0.5, -0.5, 1.0),   vec4(-0.5, 0.5, -0.5, 1.0),
+        vec4(-0.5, -0.5, 0.5, 1.0),  vec4(0.5, -0.5, 0.5, 1.0),
+        vec4(0.5, 0.5, 0.5, 1.0),    vec4(-0.5, 0.5, 0.5, 1.0),
+    };
+    for (int i = 0; i < 8; i++) {
+        point[i] = defaultPoints[i];
+    }
+
+    colour[0] = vec4(1, 0, 0, 1); // Red
+    colour[1] = vec4(0, 1, 0, 1); // Green
+    colour[2] = vec4(0, 0, 1, 1); // Blue
+    colour[3] = vec4(1, 1, 0, 1); // Yellow
+    colour[4] = vec4(0, 1, 1, 1); // Cyan
+    colour[5] = vec4(1, 0, 1, 1); // Magenta
+}
+
+
 Cuboid::Cuboid(vec4 points[8]) {
     for (int i = 0; i < 8; i++) {
         point[i] = points[i];
@@ -44,4 +64,8 @@ void Cuboid::render(GLint modelLoc, GLint faceColourLoc, mat4 modelTransform) {
         glBindVertexArray(vao[i]);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
+}
+
+Cuboid::~Cuboid(){
+    
 }
