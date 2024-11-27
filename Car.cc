@@ -99,7 +99,7 @@ void Car::render(GLint modelLoc, GLint faceColourLoc) {
 
     for (size_t i = 0; i < tires.size(); ++i) {
         mat4 tireTransform = bodyTransform * Translate(
-            tireOffsets[i].x, tireOffsets[i].y, tireOffsets[i].z);
+            tireOffsets[i].x, tireOffsets[i].y, tireOffsets[i].z) * RotateX(90.0f);
         tires[i].render(modelLoc, faceColourLoc, tireTransform);
     }
 }
