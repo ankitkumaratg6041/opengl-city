@@ -7,6 +7,9 @@
 class Car {
 private:
     Cuboid body;       // The car body represented as a cuboid
+    Cuboid leftHeadlight;
+    Cuboid rightHeadlight;
+
     vec4 position;     // Current position of the car
     float angle;       // Current orientation of the car in degrees
     float speed;       // Current speed of the car
