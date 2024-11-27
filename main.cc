@@ -17,7 +17,12 @@ std::unique_ptr<Car> car; // Initialize car at the center of the city
 
 float cameraAngleX = 0.0; // Rotation around the vertical axis (left/right)
 float cameraAngleY = 45.0; // Rotation around the horizontal axis (top-down)
-float cameraDistance = 15.0; // Distance of the camera from the city center
+// float cameraDistance = 15.0; // Distance of the camera from the city center
+
+vec4 cameraOffset(-5.0, 5.0, 5.0, 1.0); // Relative position to the car (behind and above)
+float cameraHeight = 5.0;               // Height of the camera above the car
+float cameraDistance = 7.0;             // Distance behind the car
+
 
 // Define city grid layout
 const int gridRows = 8;
@@ -141,6 +146,28 @@ void init() {
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Compute camera position relative to the car
+    vec4 carPosition = car->getPosition();
+    float carAngle = car->getAngle();
+    float radianAngle = radians(carAngle);
+
+    vec4 cameraPosition = vec4(
+        carPosition.x - cameraDistance * cos(radianAngle),
+        carPosition.y + cameraHeight,
+        carPosition.z + cameraDistance * sin(radianAngle),
+        1.0
+    );
+
+     // Compute LookAt target to focus on the car
+    mat4 view = LookAt(
+        cameraPosition,
+        vec4(carPosition.x, carPosition.y, carPosition.z, 1.0),
+        vec4(0.0, 1.0, 0.0, 0.0)
+    );
+
+     // Update the view matrix uniform
+    glUniformMatrix4fv(glGetUniformLocation(program, "uView"), 1, GL_TRUE, view);
 
     GLint modelLoc = glGetUniformLocation(program, "uModel");
     GLint faceColourLoc = glGetUniformLocation(program, "uFaceColour");

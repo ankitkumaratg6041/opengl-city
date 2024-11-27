@@ -73,6 +73,15 @@ void Car::turnRight() {
     angle -= 5.0f; // Turn by 5 degrees
 }
 
+vec4 Car::getPosition() const {
+    return position;
+}
+
+float Car::getAngle() const {
+    return angle;
+}
+
+
 void Car::render(GLint modelLoc, GLint faceColourLoc) {
     mat4 bodyTransform = Translate(position.x, position.y, position.z) *
                          RotateY(angle);

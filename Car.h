@@ -27,6 +27,10 @@ public:
     void turnLeft();                            // Turn left
     void turnRight();                           // Turn right
     void render(GLint modelLoc, GLint faceColourLoc); // Render the car
+
+    vec4 getPosition() const;
+    float getAngle() const;
+
 };
 
 #endif
