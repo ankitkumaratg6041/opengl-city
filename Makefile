@@ -5,7 +5,7 @@ LIBS = -lglut -lGLEW -lGL -lGLU
 
 # Targets
 TARGETS = main testCar
-MAIN_OBJECTS = main.o Cuboid.o InitShader.o
+MAIN_OBJECTS = main.o Cuboid.o InitShader.o Car.o Cylinder.o
 TESTCAR_OBJECTS = testCar.o Cuboid.o InitShader.o Car.o Cylinder.o
 
 # Default rule
@@ -20,7 +20,7 @@ testCar: $(TESTCAR_OBJECTS)
 	$(CC) $(CFLAGS) -o testCar $(TESTCAR_OBJECTS) $(LIBS)
 
 # Compile main file
-main.o: main.cc Cuboid.h
+main.o: main.cc Cuboid.h Car.h Cylinder.h
 	$(CC) $(CFLAGS) -c main.cc
 
 # Compile testCar file
