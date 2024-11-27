@@ -1,11 +1,13 @@
 #include <Angel.h>
 #include "Car.h"
+#include <memory> // For std::unique_ptr
 
 // Shader program
 GLuint program;
+std::unique_ptr<Car> car; // Use a smart pointer to manage the Car object
 
 // Car object
-Car car(vec4(0.0, 0.0, 0.0, 1.0));
+// Car car(vec4(0.0, 0.0, 0.0, 1.0));
 
 // Initialize function
 void init() {
@@ -32,10 +34,14 @@ void init() {
     mat4 proj = Perspective(45.0, 1.0, 0.1, 100.0);
     glUniformMatrix4fv(projLoc, 1, GL_TRUE, proj);
 
-    car.init();
+    // car.init();
 
     glClearColor(0.0, 0.0, 0.0, 1.0); // Black background
     glEnable(GL_DEPTH_TEST);
+
+    // Initialize the Car object AFTER OpenGL context is ready
+    car = std::unique_ptr<Car>(new Car(vec4(0.0, 0.0, 0.0, 1.0)));
+    car->init();
 }
 
 // Display function
@@ -50,7 +56,9 @@ void display() {
         exit(EXIT_FAILURE);
     }
 
-    car.render(modelLoc, faceColourLoc);
+    // Render the car
+    car->render(modelLoc, faceColourLoc);
+    // std::cout << "Car rendered successfully.\n";
 
     glutSwapBuffers();
 }
@@ -58,18 +66,19 @@ void display() {
 // Keyboard controls for car movement
 void keyboard(unsigned char key, int x, int y) {
     switch (key) {
-        case 'w': car.moveForward(); break; // Move forward
-        case 's': car.moveReverse(); break; // Reverse
-        case 'a': car.turnLeft(); break;    // Turn left
-        case 'd': car.turnRight(); break;   // Turn right
-        case ' ': car.stop(); break;        // Stop car
+        case 'w': car->moveForward(); break; // Move forward
+        case 's': car->moveReverse(); break; // Reverse
+        case 'a': car->turnLeft(); break;    // Turn left
+        case 'd': car->turnRight(); break;   // Turn right
+        case ' ': car->stop(); break;        // Stop car
     }
     glutPostRedisplay();
 }
 
 // Cleanup function
 void cleanup() {
-    std::cout << "Cleaning up resources...\n";
+    car.reset(); // Explicitly release the Car object
+    std::cout << "Resources cleaned up successfully.\n";
 }
 
 int main(int argc, char** argv) {
