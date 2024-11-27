@@ -1,6 +1,8 @@
 #include <vector>
 #include <cmath> // For M_PI and trigonometric functions
 #include <memory>
+#include <cstdlib> // For random number generation
+#include <ctime>   // For seeding the random number generator
 #include "Cuboid.h"
 #include "Car.h"
 
@@ -14,6 +16,7 @@ GLuint program;
 std::vector<Cuboid> cuboids;
 std::vector<vec4> cuboidPositions;
 std::unique_ptr<Car> car; // Initialize car at the center of the city
+std::vector<BoundingBox> buildingBoxes;
 
 float cameraAngleX = 0.0; // Rotation around the vertical axis (left/right)
 float cameraAngleY = 45.0; // Rotation around the horizontal axis (top-down)
@@ -77,21 +80,24 @@ void init() {
     mat4 proj = Perspective(45.0, 1.0, 0.1, 100.0);
     glUniformMatrix4fv(projLoc, 1, GL_TRUE, proj);
 
+     // Seed the random number generator
+    std::srand(static_cast<unsigned>(std::time(0)));
+
     // Define vertical and horizontal cuboid vertices
     // Building dimensions
-    vec4 verticalPoints[8] = {
-        vec4(-0.5, -1.0, -0.5, 1.0), vec4(0.5, -1.0, -0.5, 1.0),
-        vec4(0.5, 1.5, -0.5, 1.0), vec4(-0.5, 1.5, -0.5, 1.0),
-        vec4(-0.5, -1.0, 0.5, 1.0), vec4(0.5, -1.0, 0.5, 1.0),
-        vec4(0.5, 1.0, 0.5, 1.0), vec4(-0.5, 1.5, 0.5, 1.0)
-    };
+    // vec4 verticalPoints[8] = {
+    //     vec4(-0.5, -1.0, -0.5, 1.0), vec4(0.5, -1.0, -0.5, 1.0),
+    //     vec4(0.5, 1.5, -0.5, 1.0), vec4(-0.5, 1.5, -0.5, 1.0),
+    //     vec4(-0.5, -1.0, 0.5, 1.0), vec4(0.5, -1.0, 0.5, 1.0),
+    //     vec4(0.5, 1.0, 0.5, 1.0), vec4(-0.5, 1.5, 0.5, 1.0)
+    // };
 
-    vec4 horizontalPoints[8] = {
-        vec4(-0.5, -0.5, -1.0, 1.0), vec4(0.5, -0.5, -1.0, 1.0),
-        vec4(0.5, -0.5, 1.0, 1.0), vec4(-0.5, -0.5, 1.0, 1.0),
-        vec4(-0.5, 0.5, -1.0, 1.0), vec4(0.5, 0.5, -1.0, 1.0),
-        vec4(0.5, 0.5, 1.0, 1.0), vec4(-0.5, 0.5, 1.0, 1.0)
-    };
+    // vec4 horizontalPoints[8] = {
+    //     vec4(-0.5, -0.5, -1.0, 1.0), vec4(0.5, -0.5, -1.0, 1.0),
+    //     vec4(0.5, -0.5, 1.0, 1.0), vec4(-0.5, -0.5, 1.0, 1.0),
+    //     vec4(-0.5, 0.5, -1.0, 1.0), vec4(0.5, 0.5, -1.0, 1.0),
+    //     vec4(0.5, 0.5, 1.0, 1.0), vec4(-0.5, 0.5, 1.0, 1.0)
+    // };
 
     // Define road size
     // vec4 roadPoints[8] = {
@@ -106,17 +112,41 @@ void init() {
         for (int col = 0; col < gridCols; col++) {
             vec4 position = vec4((col - gridCols / 2) * cellSize, 0.0, -(row - gridRows / 2) * cellSize, 1.0);
             if (cityLayout[row][col] == 1) {
+                // Generate random height for vertical buildings
+                float randomHeight = 1.5f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (3.0f - 1.5f))); // Random height between 1.5 and 3.0
+                vec4 verticalPoints[8] = {
+                    vec4(-0.5, -1.0, -0.5, 1.0), vec4(0.5, -1.0, -0.5, 1.0),
+                    vec4(0.5, randomHeight, -0.5, 1.0), vec4(-0.5, randomHeight, -0.5, 1.0),
+                    vec4(-0.5, -1.0, 0.5, 1.0), vec4(0.5, -1.0, 0.5, 1.0),
+                    vec4(0.5, randomHeight, 0.5, 1.0), vec4(-0.5, randomHeight, 0.5, 1.0),
+                };
                 Cuboid cuboid(verticalPoints);
                 cuboid.init();
                 cuboids.push_back(cuboid);
                 cuboidPositions.push_back(position);
             } else if (cityLayout[row][col] == 2) {
+                // Generate random height for horizontal buildings
+                float randomHeight = 1.0f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (2.5f - 1.0f))); // Random height between 1.0 and 2.5
+                vec4 horizontalPoints[8] = {
+                    vec4(-0.5, -0.5, -1.0, 1.0), vec4(0.5, -0.5, -1.0, 1.0),
+                    vec4(0.5, -0.5, 1.0, 1.0), vec4(-0.5, -0.5, 1.0, 1.0),
+                    vec4(-0.5, randomHeight, -1.0, 1.0), vec4(0.5, randomHeight, -1.0, 1.0),
+                    vec4(0.5, randomHeight, 1.0, 1.0), vec4(-0.5, randomHeight, 1.0, 1.0),
+                };
                 Cuboid cuboid(horizontalPoints);
                 cuboid.init();
                 cuboids.push_back(cuboid);
                 cuboidPositions.push_back(position);
             }
         }
+    }
+
+     // Create bounding boxes for buildings
+    for (size_t i = 0; i < cuboids.size(); i++) {
+        vec4 position = cuboidPositions[i];
+        vec4 minCorner = position - vec4(0.5, 1.0, 0.5, 0.0); // Adjust size based on cuboid dimensions
+        vec4 maxCorner = position + vec4(0.5, 1.5, 0.5, 0.0); // Adjust size based on cuboid dimensions
+        buildingBoxes.push_back(BoundingBox(minCorner, maxCorner));
     }
 
     // car.init(); // Initialize the car
@@ -142,7 +172,6 @@ void init() {
     //     cuboidPositions.push_back(horizontalPositions[i]);
     // }
 }
-
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -241,10 +270,10 @@ void display() {
 void keyboardControlHandler(unsigned char key, int x, int y) {
     switch (key) {
         case 'w': // Move car forward
-            car->moveForward();
+            car->moveForward(buildingBoxes);
             break;
         case 's': // Move car backward
-            car->moveReverse();
+            car->moveReverse(buildingBoxes);
             break;
         case 'a': // Turn car left
             car->turnLeft();

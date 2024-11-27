@@ -1,4 +1,5 @@
 #include "Car.h"
+#include "BoundingBox.h"
 
 inline float radians(float degrees) {
     return degrees * M_PI / 180.0f;
@@ -49,17 +50,34 @@ void Car::init() {
     }
 }
 
-void Car::moveForward() {
+void Car::moveForward(const std::vector<BoundingBox>& buildingBoxes) {
+    vec4 previousPosition = position;
+
+    // Attempt to move forward
     speed = 0.1f;
     position.x += speed * cos(radians(angle));
     position.z -= speed * sin(radians(angle));
+
+    // Check for collision
+    if (isCollision(getBoundingBox(), buildingBoxes)) {
+        position = previousPosition; // Revert movement
+    }
 }
 
-void Car::moveReverse() {
+void Car::moveReverse(const std::vector<BoundingBox>& buildingBoxes) {
+    vec4 previousPosition = position;
+
+    // Attempt to move backward
     speed = -0.1f;
     position.x += speed * cos(radians(angle));
     position.z -= speed * sin(radians(angle));
+
+    // Check for collision
+    if (isCollision(getBoundingBox(), buildingBoxes)) {
+        position = previousPosition; // Revert movement
+    }
 }
+
 
 void Car::stop() {
     speed = 0.0f;
@@ -81,6 +99,19 @@ float Car::getAngle() const {
     return angle;
 }
 
+BoundingBox Car::getBoundingBox() const {
+    vec4 localMin(-1.0, -0.5, -0.5, 1.0); // Local bounding box min
+    vec4 localMax(1.0, 0.5, 0.5, 1.0);   // Local bounding box max
+
+    // Transform bounding box based on car's position and angle
+    mat4 transform = Translate(position.x, position.y, position.z) * RotateY(angle);
+
+    vec4 globalMin = transform * localMin;
+    vec4 globalMax = transform * localMax;
+
+    return BoundingBox{vec3(globalMin.x, globalMin.y, globalMin.z),
+                       vec3(globalMax.x, globalMax.y, globalMax.z)};
+}
 
 void Car::render(GLint modelLoc, GLint faceColourLoc) {
     mat4 bodyTransform = Translate(position.x, position.y, position.z) *

@@ -1,36 +1,38 @@
 #ifndef CAR_H
 #define CAR_H
 
-#include <Angel.h>
 #include <vector>
 #include "Cuboid.h"
 #include "Cylinder.h"
+#include "BoundingBox.h"
+#include <Angel.h>
 
 class Car {
 private:
-    Cuboid body;       // The car body represented as a cuboid
+    Cuboid body;
     Cuboid leftHeadlight;
     Cuboid rightHeadlight;
-    std::vector<Cylinder> tires; // Tires
+    std::vector<Cylinder> tires;
 
-    vec4 position;     // Current position of the car
-    float angle;       // Current orientation of the car in degrees
-    float speed;       // Current speed of the car
+    vec4 position;
+    float angle; // Rotation of the car
+    float speed;
 
 public:
     Car(const vec4& initialPosition);
 
-    void init();                                // Initialize the car's geometry
-    void moveForward();                         // Move forward
-    void moveReverse();                         // Move in reverse
-    void stop();                                // Stop the car
-    void turnLeft();                            // Turn left
-    void turnRight();                           // Turn right
-    void render(GLint modelLoc, GLint faceColourLoc); // Render the car
+    void init();
+    void moveForward(const std::vector<BoundingBox>& buildingBoxes);
+    void moveReverse(const std::vector<BoundingBox>& buildingBoxes);
+    void stop();
+    void turnLeft();
+    void turnRight();
 
     vec4 getPosition() const;
     float getAngle() const;
+    BoundingBox getBoundingBox() const;
 
+    void render(GLint modelLoc, GLint faceColourLoc);
 };
 
 #endif

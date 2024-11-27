@@ -5,8 +5,8 @@ LIBS = -lglut -lGLEW -lGL -lGLU
 
 # Targets
 TARGETS = main testCar
-MAIN_OBJECTS = main.o Cuboid.o InitShader.o Car.o Cylinder.o
-TESTCAR_OBJECTS = testCar.o Cuboid.o InitShader.o Car.o Cylinder.o
+MAIN_OBJECTS = main.o Cuboid.o InitShader.o BoundingBox.o Car.o Cylinder.o
+TESTCAR_OBJECTS = testCar.o Cuboid.o InitShader.o Car.o Cylinder.o BoundingBox.o
 
 # Default rule
 all: $(TARGETS)
@@ -20,24 +20,28 @@ testCar: $(TESTCAR_OBJECTS)
 	$(CC) $(CFLAGS) -o testCar $(TESTCAR_OBJECTS) $(LIBS)
 
 # Compile main file
-main.o: main.cc Cuboid.h Car.h Cylinder.h
+main.o: main.cc Cuboid.h Car.h Cylinder.h BoundingBox.h
 	$(CC) $(CFLAGS) -c main.cc
 
 # Compile testCar file
-testCar.o: testCar.cc Car.h Cuboid.h Cylinder.h
+testCar.o: testCar.cc Car.h Cuboid.h Cylinder.h BoundingBox.h
 	$(CC) $(CFLAGS) -c testCar.cc
 
 # Compile Car class
-Car.o: Car.cc Car.h Cuboid.h Cylinder.h
+Car.o: Car.cc Car.h Cuboid.h Cylinder.h BoundingBox.h
 	$(CC) $(CFLAGS) -c Car.cc
 
 # Compile Cuboid class
-Cuboid.o: Cuboid.cc Cuboid.h
+Cuboid.o: Cuboid.cc Cuboid.h BoundingBox.h
 	$(CC) $(CFLAGS) -c Cuboid.cc
 
 # Compile Cylinder class
 Cylinder.o: Cylinder.cc Cylinder.h
 	$(CC) $(CFLAGS) -c Cylinder.cc
+
+# Compile BoundingBox class
+BoundingBox.o: BoundingBox.cc BoundingBox.h
+	$(CC) $(CFLAGS) -c BoundingBox.cc
 
 # Compile InitShader utility
 InitShader.o: common/InitShader.cc

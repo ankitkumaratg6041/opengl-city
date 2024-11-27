@@ -2,6 +2,9 @@
 #define CUBOID_H
 
 #include <Angel.h>
+// #include "BoundingBox.h"
+
+class BoundingBox;
 
 class Cuboid {
 public:
@@ -13,6 +16,8 @@ public:
     Cuboid(vec4 points[8]); // Constructor to initialize geometry
     void init();
     void render(GLint modelLoc, GLint faceColourLoc, mat4 modelTransform);
+    // Declare this function but avoid including full BoundingBox definition here
+    BoundingBox getBoundingBox(const vec4& position) const;
     ~Cuboid();
 };
 

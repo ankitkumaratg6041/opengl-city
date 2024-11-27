@@ -1,4 +1,5 @@
 #include "Cuboid.h"
+#include "BoundingBox.h" // Include full definition here
 
 const int face[6][4] = {
     {0, 1, 2, 3}, {4, 5, 6, 7},
@@ -55,6 +56,16 @@ void Cuboid::init() {
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
     }
+}
+
+BoundingBox Cuboid::getBoundingBox(const vec4& position) const {
+    vec3 localMin(-0.5, -0.5, -0.5); // Adjust based on cuboid dimensions
+    vec3 localMax(0.5, 1.5, 0.5);
+
+    vec3 globalMin = vec3(localMin.x + position.x, localMin.y + position.y, localMin.z + position.z);
+    vec3 globalMax = vec3(localMax.x + position.x, localMax.y + position.y, localMax.z + position.z);
+
+    return BoundingBox{globalMin, globalMax};
 }
 
 void Cuboid::render(GLint modelLoc, GLint faceColourLoc, mat4 modelTransform) {
