@@ -31,19 +31,27 @@ float cameraDistance = 7.0;             // Distance behind the car
 
 
 // Define city grid layout
-const int gridRows = 8;
-const int gridCols = 8;
+const int gridRows = 16;
+const int gridCols = 16;
 
 // 0 = Road, 1 = Vertical Building, 2 = Horizontal Building
 int cityLayout[gridRows][gridCols] = {
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {1, 0, 1, 0, 1, 0, 2, 0},
-    {1, 0, 0, 0, 0, 0, 2, 0},
-    {1, 1, 1, 0, 2, 2, 2, 0},
-    {0, 0, 1, 0, 0, 0, 0, 0},
-    {0, 0, 1, 0, 1, 0, 1, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0}
+    {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 };
 
 // Positions for vertical buildings
@@ -109,19 +117,39 @@ void init() {
     //     vec4(-1.0, 0.05, -1.0, 1.0), vec4(1.0, 0.05, -1.0, 1.0),
     //     vec4(1.0, 0.05, 1.0, 1.0), vec4(-1.0, 0.05, 1.0, 1.0)
     // };
-     float cellSize = 3.0f;
+     float cellSize = 6.0f;
     // Populate buildings and roads based on the grid layout
     for (int row = 0; row < gridRows; row++) {
         for (int col = 0; col < gridCols; col++) {
             vec4 position = vec4((col - gridCols / 2) * cellSize, 0.0, -(row - gridRows / 2) * cellSize, 1.0);
+
+            // Skip roads (0s in cityLayout)
+            if (cityLayout[row][col] == 0) {
+                continue;
+            }
+
+            // Generate random height ranges with more variability
+            float randomHeight;
+            if (std::rand() % 100 < 20) { // 20% chance for very tall buildings
+                randomHeight = 5.0f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / 5.0f)); // Tall buildings (5.0 to 10.0)
+            } else if (std::rand() % 100 < 30) { // 30% chance for very short buildings
+                randomHeight = 1.0f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / 1.5f)); // Short buildings (1.0 to 2.5)
+            } else { // Remaining buildings are medium height
+                randomHeight = 2.0f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / 3.0f)); // Medium height (2.0 to 5.0)
+            }
+
+            // Define thickness
+            float thickness = 1.5f;
+
             if (cityLayout[row][col] == 1) {
                 // Generate random height for vertical buildings
-                float randomHeight = 1.5f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (3.0f - 1.5f))); // Random height between 1.5 and 3.0
+                // float randomHeight = 2.0f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX * 2.0f)); // Random height between 1.5 and 3.0
+                // float thickness = 1.5f;   // Random thickness between 1.0 and 1.5
                 vec4 verticalPoints[8] = {
-                    vec4(-0.5, -1.0, -0.5, 1.0), vec4(0.5, -1.0, -0.5, 1.0),
-                    vec4(0.5, randomHeight, -0.5, 1.0), vec4(-0.5, randomHeight, -0.5, 1.0),
-                    vec4(-0.5, -1.0, 0.5, 1.0), vec4(0.5, -1.0, 0.5, 1.0),
-                    vec4(0.5, randomHeight, 0.5, 1.0), vec4(-0.5, randomHeight, 0.5, 1.0),
+                    vec4(-thickness, -1.0, -thickness, 1.0), vec4(thickness, -1.0, -thickness, 1.0),
+                    vec4(thickness, randomHeight, -thickness, 1.0), vec4(-thickness, randomHeight, -thickness, 1.0),
+                    vec4(-thickness, -1.0, thickness, 1.0), vec4(thickness, -1.0, thickness, 1.0),
+                    vec4(thickness, randomHeight, thickness, 1.0), vec4(-thickness, randomHeight, thickness, 1.0),
                 };
                 Cuboid cuboid(verticalPoints);
                 cuboid.init();
@@ -130,11 +158,12 @@ void init() {
             } else if (cityLayout[row][col] == 2) {
                 // Generate random height for horizontal buildings
                 float randomHeight = 1.0f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (2.5f - 1.0f))); // Random height between 1.0 and 2.5
+                float thickness = 2.0f; // Adjusted for thicker buildings
                 vec4 horizontalPoints[8] = {
-                    vec4(-0.5, -0.5, -1.0, 1.0), vec4(0.5, -0.5, -1.0, 1.0),
-                    vec4(0.5, -0.5, 1.0, 1.0), vec4(-0.5, -0.5, 1.0, 1.0),
-                    vec4(-0.5, randomHeight, -1.0, 1.0), vec4(0.5, randomHeight, -1.0, 1.0),
-                    vec4(0.5, randomHeight, 1.0, 1.0), vec4(-0.5, randomHeight, 1.0, 1.0),
+                    vec4(-thickness, -0.5, -2.0, 1.0), vec4(thickness, -0.5, -2.0, 1.0),
+                    vec4(thickness, -0.5, 2.0, 1.0), vec4(-thickness, -0.5, 2.0, 1.0),
+                    vec4(-thickness, randomHeight, -2.0, 1.0), vec4(thickness, randomHeight, -2.0, 1.0),
+                    vec4(thickness, randomHeight, 2.0, 1.0), vec4(-thickness, randomHeight, 2.0, 1.0),
                 };
                 Cuboid cuboid(horizontalPoints);
                 cuboid.init();
@@ -213,9 +242,9 @@ void display() {
 
 
      vec4 cameraPosition(
-        carPosition.x - 7.0f * cos(radians(carAngle)),  // Behind the car along its angle
-        carPosition.y + 5.0f,                            // Above the car
-        carPosition.z + 7.0f * sin(radians(carAngle)),  // Adjust z based on angle
+        carPosition.x - 10.0f * cos(radians(carAngle)),  // Behind the car along its angle
+        carPosition.y + 6.0f,                            // Above the car
+        carPosition.z + 12.0f * sin(radians(carAngle)),  // Adjust z based on angle
         1.0);
 
         // Compute LookAt target to focus on the car
