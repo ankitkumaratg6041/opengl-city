@@ -185,10 +185,15 @@ void display() {
     if (keyState['w']) {
         car->moveForward(buildingBoxes); // Move forward
         isMoving = true; // Mark as moving
+        car->setReversing(false); // Ensure tail light is not red when moving forward
     }
     if (keyState['s']) {
         car->moveReverse(buildingBoxes); // Move backward
         isMoving = true; // Mark as moving
+        car->setReversing(true); // Set tail light to red
+    }
+    if (!keyState['s']) {
+        car->setReversing(false); // Reset tail light to white when 's' is released
     }
     if (keyState['a'] && isMoving) {
         car->turnLeft(); // Rotate car to the left while moving
@@ -327,13 +332,35 @@ void display() {
 
 void keyboardControlHandler(unsigned char key, int x, int y) {
     keyState[key] = true; // Mark the key as pressed
-    glutPostRedisplay();
+
+    // Handle specific key presses
+    switch (key) {
+        case 'w': // Move forward
+            car->moveForward(buildingBoxes);
+            car->setReversing(false); // Ensure tail light is not red when moving forward
+            break;
+        case 's': // Reverse
+            car->setReversing(true); // Set the reversing flag
+            car->moveReverse(buildingBoxes);
+            break;
+        case 27: // Escape key to exit
+            exit(0);
+    }
+
+    glutPostRedisplay(); // Trigger a redraw
 }
 
 void keyboardUpControlHandler(unsigned char key, int x, int y) {
     keyState[key] = false; // Mark the key as released
-    glutPostRedisplay();
+
+    // Handle specific key releases
+    if (key == 's') {
+        car->setReversing(false); // Reset the reversing flag
+    }
+
+    glutPostRedisplay(); // Trigger a redraw
 }
+
 
 
 // int lastMouseX = 0; // Track the last X position of the mouse

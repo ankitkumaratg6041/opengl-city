@@ -18,6 +18,7 @@ private:
     vec4 position;
     float angle; // Rotation of the car
     float speed;
+    bool isReversing; // Flag to indicate if the car is reversing
 
 public:
     Car(const vec4& initialPosition);
@@ -28,6 +29,8 @@ public:
     void stop();
     void turnLeft();
     void turnRight();
+    void setReversing(bool reversing); // Setter for isReversing
+    bool getReversing() const;         // Getter for isReversing
 
     vec4 getPosition() const;
     float getAngle() const;

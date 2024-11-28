@@ -6,7 +6,7 @@ inline float radians(float degrees) {
 }
 
 Car::Car(const vec4& initialPosition)
-    : position(initialPosition), angle(0.0f), speed(0.0f) {
+    : position(initialPosition), angle(0.0f), speed(0.0f), isReversing(false) {
     // Main car body (cuboid)
     vec4 carVertices[8] = {
         vec4(-1.0, -0.5, -0.5, 1.0), vec4(1.0, -0.5, -0.5, 1.0), // red face starts here 
@@ -34,14 +34,27 @@ Car::Car(const vec4& initialPosition)
     };
     rightHeadlight = Cuboid(rightHeadlightVertices);
 
-     // Tail light vertices
+    // Tail light vertices
     vec4 tailLightVertices[8] = {
         vec4(-0.5, 0.0, 0.5, 1.0), vec4(0.5, 0.0, 0.5, 1.0),  // Bottom edge
         vec4(0.5, 0.2, 0.5, 1.0), vec4(-0.5, 0.2, 0.5, 1.0),  // Top edge
         vec4(-0.5, 0.0, 0.45, 1.0), vec4(0.5, 0.0, 0.45, 1.0), // Back depth
         vec4(0.5, 0.2, 0.45, 1.0), vec4(-0.5, 0.2, 0.45, 1.0), // Back depth
     };
-    tailLight = Cuboid(tailLightVertices);
+
+    // Custom face colors for the tail light (all white by default)
+    vec4 tailLightColors[6] = {
+        vec4(1.0, 1.0, 1.0, 1.0), // Bottom face
+        vec4(1.0, 1.0, 1.0, 1.0), // Top face
+        vec4(1.0, 1.0, 1.0, 1.0), // Front face
+        vec4(1.0, 1.0, 1.0, 1.0), // Back face
+        vec4(1.0, 1.0, 1.0, 1.0), // Right face
+        vec4(1.0, 1.0, 1.0, 1.0), // Left face
+    };
+
+    // Create the tail light using the new Cuboid constructor
+    tailLight = Cuboid(tailLightVertices, tailLightColors);
+
 
     // Tires (4 cylinders)
     for (int i = 0; i < 4; ++i) {
@@ -72,6 +85,8 @@ void Car::moveForward(const std::vector<BoundingBox>& buildingBoxes) {
     if (isCollision(getBoundingBox(), buildingBoxes)) {
         position = previousPosition; // Revert movement
     }
+
+    isReversing = false; // Reset the flag when moving forward
 }
 
 void Car::moveReverse(const std::vector<BoundingBox>& buildingBoxes) {
@@ -86,6 +101,8 @@ void Car::moveReverse(const std::vector<BoundingBox>& buildingBoxes) {
     if (isCollision(getBoundingBox(), buildingBoxes)) {
         position = previousPosition; // Revert movement
     }
+
+    isReversing = true; // Set the flag to true when reversing
 }
 
 
@@ -108,6 +125,15 @@ vec4 Car::getPosition() const {
 float Car::getAngle() const {
     return angle;
 }
+
+void Car::setReversing(bool reversing) {
+    isReversing = reversing;
+}
+
+bool Car::getReversing() const {
+    return isReversing;
+}
+
 
 BoundingBox Car::getBoundingBox() const {
     vec4 localMin(-1.0, -0.5, -0.5, 1.0); // Local bounding box min
@@ -139,10 +165,38 @@ void Car::render(GLint modelLoc, GLint faceColourLoc) {
                                    Translate(1.5, 0.1, -0.1); // Position on cyan face
     rightHeadlight.render(modelLoc, faceColourLoc, rightHeadlightTransform);
 
+    // Update the tail light colors
+    vec4 redColors[6] = {
+        vec4(1.0f, 0.0f, 0.0f, 1.0f), // Red
+        vec4(1.0f, 0.0f, 0.0f, 1.0f),
+        vec4(1.0f, 0.0f, 0.0f, 1.0f),
+        vec4(1.0f, 0.0f, 0.0f, 1.0f),
+        vec4(1.0f, 0.0f, 0.0f, 1.0f),
+        vec4(1.0f, 0.0f, 0.0f, 1.0f)
+    };
+
+    vec4 whiteColors[6] = {
+        vec4(1.0f, 1.0f, 1.0f, 1.0f), // White
+        vec4(1.0f, 1.0f, 1.0f, 1.0f),
+        vec4(1.0f, 1.0f, 1.0f, 1.0f),
+        vec4(1.0f, 1.0f, 1.0f, 1.0f),
+        vec4(1.0f, 1.0f, 1.0f, 1.0f),
+        vec4(1.0f, 1.0f, 1.0f, 1.0f)
+    };
+
+    if (isReversing) {
+        tailLight.setFaceColors(redColors);
+    } else {
+        tailLight.setFaceColors(whiteColors);
+    }
+
      // Render the tail light
     mat4 tailLightTransform = bodyTransform *
-                              Translate(-1.5, -0.1, -0.5); // Slightly inside the back face
-    glUniform4f(faceColourLoc, 1.0f, 0.0f, 0.0f, 1.0f); // Red color for the tail light
+                              Translate(-0.6, 0.5, 0.0) *  // Move to the back face
+                              RotateX(270.0f) *
+                              RotateY(270.0f) *
+                              RotateZ(90.0f);   // Slightly inside the back face
+    // glUniform4f(faceColourLoc, 1.0f, 0.0f, 0.0f, 1.0f); // Red color for the tail light
     tailLight.render(modelLoc, faceColourLoc, tailLightTransform);
 
     // Render the tires

@@ -39,6 +39,23 @@ Cuboid::Cuboid(vec4 points[8]) {
     colour[5] = vec4(1, 0, 1, 1); // Magenta
 }
 
+// Constructor with custom face colors
+Cuboid::Cuboid(const vec4 vertices[8], const vec4 faceColors[6]) {
+    for (int i = 0; i < 8; ++i) {
+        point[i] = vertices[i];
+    }
+    for (int i = 0; i < 6; ++i) {
+        colour[i] = faceColors[i];
+    }
+    hasCustomColors = true; // Mark that custom colors are used
+}
+
+void Cuboid::setFaceColors(const vec4 newColors[6]) {
+    for (int i = 0; i < 6; ++i) {
+        colour[i] = newColors[i];
+    }
+}
+
 void Cuboid::init() {
     glGenVertexArrays(6, vao);
     glGenBuffers(6, buffer);
@@ -58,6 +75,15 @@ void Cuboid::init() {
     }
 }
 
+void Cuboid::render(GLint modelLoc, GLint faceColourLoc, mat4 modelTransform) {
+    glUniformMatrix4fv(modelLoc, 1, GL_TRUE, modelTransform);
+    for (int i = 0; i < 6; i++) {
+        glUniform4fv(faceColourLoc, 1, colour[i]);
+        glBindVertexArray(vao[i]);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    }
+}
+
 BoundingBox Cuboid::getBoundingBox(const vec4& position) const {
     vec3 localMin(-0.5, -0.5, -0.5); // Adjust based on cuboid dimensions
     vec3 localMax(0.5, 1.5, 0.5);
@@ -66,15 +92,6 @@ BoundingBox Cuboid::getBoundingBox(const vec4& position) const {
     vec3 globalMax = vec3(localMax.x + position.x, localMax.y + position.y, localMax.z + position.z);
 
     return BoundingBox{globalMin, globalMax};
-}
-
-void Cuboid::render(GLint modelLoc, GLint faceColourLoc, mat4 modelTransform) {
-    glUniformMatrix4fv(modelLoc, 1, GL_TRUE, modelTransform);
-    for (int i = 0; i < 6; i++) {
-        glUniform4fv(faceColourLoc, 1, colour[i]);
-        glBindVertexArray(vao[i]);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    }
 }
 
 Cuboid::~Cuboid(){
