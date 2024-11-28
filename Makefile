@@ -5,8 +5,8 @@ LIBS = -lglut -lGLEW -lGL -lGLU
 
 # Targets
 TARGETS = main testCar
-MAIN_OBJECTS = main.o Cuboid.o InitShader.o BoundingBox.o Car.o Cylinder.o
-TESTCAR_OBJECTS = testCar.o Cuboid.o InitShader.o Car.o Cylinder.o BoundingBox.o
+MAIN_OBJECTS = main.o Cuboid.o InitShader.o BoundingBox.o Car.o Cylinder.o TrafficLight.o
+TESTCAR_OBJECTS = testCar.o Cuboid.o InitShader.o Car.o Cylinder.o BoundingBox.o TrafficLight.o
 
 # Default rule
 all: $(TARGETS)
@@ -20,16 +20,20 @@ testCar: $(TESTCAR_OBJECTS)
 	$(CC) $(CFLAGS) -o testCar $(TESTCAR_OBJECTS) $(LIBS)
 
 # Compile main file
-main.o: main.cc
+main.o: main.cc TrafficLight.h Cuboid.h Car.h BoundingBox.h Cylinder.h
 	$(CC) $(CFLAGS) -c main.cc
 
 # Compile testCar file
-testCar.o: testCar.cc
+testCar.o: testCar.cc TrafficLight.h Cuboid.h Car.h BoundingBox.h Cylinder.h
 	$(CC) $(CFLAGS) -c testCar.cc
 
 # Compile Car class
 Car.o: Car.cc Car.h Cuboid.h Cylinder.h BoundingBox.h
 	$(CC) $(CFLAGS) -c Car.cc
+
+# Compile TrafficLight class
+TrafficLight.o: TrafficLight.cc TrafficLight.h Cuboid.h BoundingBox.h
+	$(CC) $(CFLAGS) -c TrafficLight.cc
 
 # Compile Cuboid class
 Cuboid.o: Cuboid.cc Cuboid.h BoundingBox.h

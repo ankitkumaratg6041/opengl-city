@@ -77,7 +77,7 @@ void Car::moveForward(const std::vector<BoundingBox>& buildingBoxes) {
     vec4 previousPosition = position;
 
     // Attempt to move forward
-    speed = 0.2f;
+    speed = 0.1f;
     position.x += speed * cos(radians(angle));
     position.z -= speed * sin(radians(angle));
 
@@ -136,7 +136,7 @@ bool Car::getReversing() const {
 
 
 BoundingBox Car::getBoundingBox() const {
-    vec4 localMin(-1.0, -0.5, -0.5, 1.0); // Local bounding box min
+    vec4 localMin(-.0, -0.5, -0.5, 1.0); // Local bounding box min
     vec4 localMax(1.0, 0.5, 0.5, 1.0);   // Local bounding box max
 
     // Transform bounding box based on car's position and angle

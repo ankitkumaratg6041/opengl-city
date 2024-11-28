@@ -3,8 +3,11 @@
 #include <memory>
 #include <cstdlib> // For random number generation
 #include <ctime>   // For seeding the random number generator
+#include <algorithm> // For std::shuffle
+#include <random>    // For random number generator
 #include "Cuboid.h"
 #include "Car.h"
+#include "TrafficLight.h"
 
 inline float radians(float degrees) {
     return degrees * M_PI / 180.0f;
@@ -13,10 +16,11 @@ inline float radians(float degrees) {
 // Shader program
 GLuint program;
 
-std::vector<Cuboid> cuboids;
 std::vector<vec4> cuboidPositions;
 std::unique_ptr<Car> car; // Initialize car at the center of the city
+std::vector<Cuboid> cuboids;
 std::vector<BoundingBox> buildingBoxes;
+std::vector<TrafficLight> trafficLights;
 
 bool keyState[256] = {false}; // Array to track key states
 
@@ -118,6 +122,34 @@ void init() {
     //     vec4(1.0, 0.05, 1.0, 1.0), vec4(-1.0, 0.05, 1.0, 1.0)
     // };
      float cellSize = 6.0f;
+
+    // Collect all possible traffic light positions (intersections)
+    std::vector<vec4> possibleTrafficLightPositions;
+
+    for (int row = 0; row < gridRows - 1; row++) {
+        for (int col = 0; col < gridCols - 1; col++) {
+            // Check if the current cell and its adjacent cells are roads
+            if (cityLayout[row][col] == 0 && cityLayout[row + 1][col] == 0 && cityLayout[row][col + 1] == 0) {
+                vec4 position((col - gridCols / 2) * cellSize, 0.0, -(row - gridRows / 2) * cellSize, 1.0);
+                possibleTrafficLightPositions.push_back(position);
+            }
+        }
+    }
+
+    // Shuffle the possible traffic light positions
+    std::random_device rd;  // Seed for the random number generator
+    std::mt19937 rng(rd()); // Mersenne Twister random number generator
+    std::shuffle(possibleTrafficLightPositions.begin(), possibleTrafficLightPositions.end(), rng);
+
+    // Randomly select up to 7 positions for traffic lights
+    int totalTrafficLights = std::min(7, static_cast<int>(possibleTrafficLightPositions.size()));
+
+    for (int i = 0; i < totalTrafficLights; i++) {
+        TrafficLight trafficLight(possibleTrafficLightPositions[i]);
+        trafficLight.init();
+        trafficLights.push_back(trafficLight);
+    }
+
     // Populate buildings and roads based on the grid layout
     for (int row = 0; row < gridRows; row++) {
         for (int col = 0; col < gridCols; col++) {
@@ -243,7 +275,7 @@ void display() {
 
      vec4 cameraPosition(
         carPosition.x - 10.0f * cos(radians(carAngle)),  // Behind the car along its angle
-        carPosition.y + 6.0f,                            // Above the car
+        carPosition.y + 2.5f,                            // Above the car
         carPosition.z + 12.0f * sin(radians(carAngle)),  // Adjust z based on angle
         1.0);
 
@@ -272,6 +304,10 @@ void display() {
 
     GLint modelLoc = glGetUniformLocation(program, "uModel");
     GLint faceColourLoc = glGetUniformLocation(program, "uFaceColour");
+
+    for (TrafficLight& trafficLight : trafficLights) {
+        trafficLight.render(modelLoc, faceColourLoc);
+    }
 
     // Render all cuboids
     for (size_t i = 0; i < cuboids.size(); i++) {
@@ -359,6 +395,21 @@ void display() {
 //     glutPostRedisplay();
 // }
 
+void idle() {
+    static int frameCount = 0; // Frame counter to control timing
+
+    // Change light every 180 frames (~3 seconds at 60 FPS)
+    if (frameCount % 180 == 0) {
+        for (TrafficLight& trafficLight : trafficLights) {
+            trafficLight.cycleLights(); // Cycle the light
+        }
+    }
+
+    frameCount++;
+    glutPostRedisplay(); // Trigger a redraw
+}
+
+
 void keyboardControlHandler(unsigned char key, int x, int y) {
     keyState[key] = true; // Mark the key as pressed
 
@@ -416,6 +467,7 @@ int main(int argc, char** argv) {
     glutKeyboardFunc(keyboardControlHandler); // For key press
     glutKeyboardUpFunc(keyboardUpControlHandler); // For key release
     glutIdleFunc(display); // Continuously update display for smooth movement
+    glutIdleFunc(idle);
     // glutMotionFunc(mouseDragHandler);
     glutMainLoop();
     return 0;
