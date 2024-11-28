@@ -98,6 +98,15 @@ void init() {
      // Seed the random number generator
     std::srand(static_cast<unsigned>(std::time(0)));
 
+     // Define a color palette
+    std::vector<vec4> colorPalette = {
+        vec4(1.0, 0.0, 0.0, 1.0),  // Red
+        vec4(0.5, 0.5, 0.5, 1.0),  // Grey
+        vec4(0.5, 0.0, 0.5, 1.0),  // Purple
+        vec4(0.0, 1.0, 0.0, 1.0),  // Green
+        vec4(0.0, 0.0, 1.0, 1.0)   // Blue
+    };
+
     // Define vertical and horizontal cuboid vertices
     // Building dimensions
     // vec4 verticalPoints[8] = {
@@ -150,7 +159,7 @@ void init() {
         trafficLights.push_back(trafficLight);
     }
 
-    // Populate buildings and roads based on the grid layout
+    // Populate buildings and assign a solid color
     for (int row = 0; row < gridRows; row++) {
         for (int col = 0; col < gridCols; col++) {
             vec4 position = vec4((col - gridCols / 2) * cellSize, 0.0, -(row - gridRows / 2) * cellSize, 1.0);
@@ -160,51 +169,41 @@ void init() {
                 continue;
             }
 
-            // Generate random height ranges with more variability
-            float randomHeight;
-            if (std::rand() % 100 < 20) { // 20% chance for very tall buildings
-                randomHeight = 5.0f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / 5.0f)); // Tall buildings (5.0 to 10.0)
-            } else if (std::rand() % 100 < 30) { // 30% chance for very short buildings
-                randomHeight = 1.0f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / 1.5f)); // Short buildings (1.0 to 2.5)
-            } else { // Remaining buildings are medium height
-                randomHeight = 2.0f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / 3.0f)); // Medium height (2.0 to 5.0)
-            }
+            // Randomly select a color for the building
+            vec4 selectedColor = colorPalette[std::rand() % colorPalette.size()];
+            vec4 faceColors[6] = {selectedColor, selectedColor, selectedColor, selectedColor, selectedColor, selectedColor};
 
-            // Define thickness
+            // Define the building dimensions
+            float randomHeight = 2.0f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / 3.0f)); // Medium height (2.0 to 5.0)
             float thickness = 1.5f;
 
             if (cityLayout[row][col] == 1) {
-                // Generate random height for vertical buildings
-                // float randomHeight = 2.0f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX * 2.0f)); // Random height between 1.5 and 3.0
-                // float thickness = 1.5f;   // Random thickness between 1.0 and 1.5
+                // Vertical building
                 vec4 verticalPoints[8] = {
                     vec4(-thickness, -1.0, -thickness, 1.0), vec4(thickness, -1.0, -thickness, 1.0),
                     vec4(thickness, randomHeight, -thickness, 1.0), vec4(-thickness, randomHeight, -thickness, 1.0),
                     vec4(-thickness, -1.0, thickness, 1.0), vec4(thickness, -1.0, thickness, 1.0),
                     vec4(thickness, randomHeight, thickness, 1.0), vec4(-thickness, randomHeight, thickness, 1.0),
                 };
-                Cuboid cuboid(verticalPoints);
+                Cuboid cuboid(verticalPoints, faceColors);
                 cuboid.init();
                 cuboids.push_back(cuboid);
                 cuboidPositions.push_back(position);
             } else if (cityLayout[row][col] == 2) {
-                // Generate random height for horizontal buildings
-                float randomHeight = 1.0f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (2.5f - 1.0f))); // Random height between 1.0 and 2.5
-                float thickness = 2.0f; // Adjusted for thicker buildings
+                // Horizontal building
                 vec4 horizontalPoints[8] = {
                     vec4(-thickness, -0.5, -2.0, 1.0), vec4(thickness, -0.5, -2.0, 1.0),
                     vec4(thickness, -0.5, 2.0, 1.0), vec4(-thickness, -0.5, 2.0, 1.0),
                     vec4(-thickness, randomHeight, -2.0, 1.0), vec4(thickness, randomHeight, -2.0, 1.0),
                     vec4(thickness, randomHeight, 2.0, 1.0), vec4(-thickness, randomHeight, 2.0, 1.0),
                 };
-                Cuboid cuboid(horizontalPoints);
+                Cuboid cuboid(horizontalPoints, faceColors);
                 cuboid.init();
                 cuboids.push_back(cuboid);
                 cuboidPositions.push_back(position);
             }
         }
     }
-
      // Create bounding boxes for buildings
     for (size_t i = 0; i < cuboids.size(); i++) {
         vec4 position = cuboidPositions[i];
