@@ -18,6 +18,9 @@ std::vector<vec4> cuboidPositions;
 std::unique_ptr<Car> car; // Initialize car at the center of the city
 std::vector<BoundingBox> buildingBoxes;
 
+bool keyState[256] = {false}; // Array to track key states
+
+
 float cameraAngleX = 0.0; // Rotation around the vertical axis (left/right)
 float cameraAngleY = 45.0; // Rotation around the horizontal axis (top-down)
 // float cameraDistance = 15.0; // Distance of the camera from the city center
@@ -176,24 +179,59 @@ void init() {
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // Check for movement and turning
+    bool isMoving = false;
+
+    if (keyState['w']) {
+        car->moveForward(buildingBoxes); // Move forward
+        isMoving = true; // Mark as moving
+    }
+    if (keyState['s']) {
+        car->moveReverse(buildingBoxes); // Move backward
+        isMoving = true; // Mark as moving
+    }
+    if (keyState['a'] && isMoving) {
+        car->turnLeft(); // Rotate car to the left while moving
+    }
+    if (keyState['d'] && isMoving) {
+        car->turnRight(); // Rotate car to the right while moving
+    }
+
     // Compute camera position relative to the car
     vec4 carPosition = car->getPosition();
     float carAngle = car->getAngle();
-    float radianAngle = radians(carAngle);
+    // float radianAngle = radians(carAngle);
 
-    vec4 cameraPosition = vec4(
-        carPosition.x - cameraDistance * cos(radianAngle),
-        carPosition.y + cameraHeight,
-        carPosition.z + cameraDistance * sin(radianAngle),
-        1.0
-    );
+    // Compute camera position relative to the car
+    float cameraDistance = 20.0f;  // Distance behind the car
+    float cameraHeight = 3.0f;    // Height above the car
+
+
+     vec4 cameraPosition(
+        carPosition.x - 7.0f * cos(radians(carAngle)),  // Behind the car along its angle
+        carPosition.y + 5.0f,                            // Above the car
+        carPosition.z + 7.0f * sin(radians(carAngle)),  // Adjust z based on angle
+        1.0);
+
+        // Compute LookAt target to focus on the car
+    mat4 view = LookAt(
+        cameraPosition,               // Camera position
+        vec4(carPosition.x, carPosition.y, carPosition.z, 1.0),                  // Look at the car
+        vec4(0.0, 1.0, 0.0, 0.0));    // Up vector
+
+    // vec4 cameraPosition = vec4(
+    //     carPosition.x - cameraDistance * cos(radianAngle),
+    //     carPosition.y + cameraHeight,
+    //     carPosition.z + cameraDistance * sin(radianAngle),
+    //     1.0
+    // );
 
      // Compute LookAt target to focus on the car
-    mat4 view = LookAt(
-        cameraPosition,
-        vec4(carPosition.x, carPosition.y, carPosition.z, 1.0),
-        vec4(0.0, 1.0, 0.0, 0.0)
-    );
+    // mat4 view = LookAt(
+    //     cameraPosition,
+    //     vec4(carPosition.x, carPosition.y, carPosition.z, 1.0),
+    //     vec4(0.0, 1.0, 0.0, 0.0)
+    // );
 
      // Update the view matrix uniform
     glUniformMatrix4fv(glGetUniformLocation(program, "uView"), 1, GL_TRUE, view);
@@ -267,25 +305,36 @@ void display() {
 //     glutPostRedisplay(); // Request a redraw
 // }
 
+// void keyboardControlHandler(unsigned char key, int x, int y) {
+//     switch (key) {
+//         case 'w': // Move car forward
+//             car->moveForward(buildingBoxes);
+//             break;
+//         case 's': // Move car backward
+//             car->moveReverse(buildingBoxes);
+//             break;
+//         case 'a': // Turn car left
+//             car->turnLeft();
+//             break;
+//         case 'd': // Turn car right
+//             car->turnRight();
+//             break;
+//         case 27: // Escape key to exit
+//             exit(0);
+//     }
+//     glutPostRedisplay();
+// }
+
 void keyboardControlHandler(unsigned char key, int x, int y) {
-    switch (key) {
-        case 'w': // Move car forward
-            car->moveForward(buildingBoxes);
-            break;
-        case 's': // Move car backward
-            car->moveReverse(buildingBoxes);
-            break;
-        case 'a': // Turn car left
-            car->turnLeft();
-            break;
-        case 'd': // Turn car right
-            car->turnRight();
-            break;
-        case 27: // Escape key to exit
-            exit(0);
-    }
+    keyState[key] = true; // Mark the key as pressed
     glutPostRedisplay();
 }
+
+void keyboardUpControlHandler(unsigned char key, int x, int y) {
+    keyState[key] = false; // Mark the key as released
+    glutPostRedisplay();
+}
+
 
 // int lastMouseX = 0; // Track the last X position of the mouse
 
@@ -308,7 +357,9 @@ int main(int argc, char** argv) {
 
     glutDisplayFunc(display);
     // glutMouseFunc(mouseControlHandler);
-    glutKeyboardFunc(keyboardControlHandler);
+    glutKeyboardFunc(keyboardControlHandler); // For key press
+    glutKeyboardUpFunc(keyboardUpControlHandler); // For key release
+    glutIdleFunc(display); // Continuously update display for smooth movement
     // glutMotionFunc(mouseDragHandler);
     glutMainLoop();
     return 0;

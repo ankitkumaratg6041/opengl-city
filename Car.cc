@@ -9,10 +9,10 @@ Car::Car(const vec4& initialPosition)
     : position(initialPosition), angle(0.0f), speed(0.0f) {
     // Main car body (cuboid)
     vec4 carVertices[8] = {
-        vec4(-1.0, -0.5, -0.5, 1.0), vec4(1.0, -0.5, -0.5, 1.0),
-        vec4(1.0, 0.5, -0.5, 1.0),   vec4(-1.0, 0.5, -0.5, 1.0),
-        vec4(-1.0, -0.5, 0.5, 1.0),  vec4(1.0, -0.5, 0.5, 1.0),  // Cyan face starts here
-        vec4(1.0, 0.5, 0.5, 1.0),    vec4(-1.0, 0.5, 0.5, 1.0),  // Cyan face ends here
+        vec4(-1.0, -0.5, -0.5, 1.0), vec4(1.0, -0.5, -0.5, 1.0), // red face starts here 
+        vec4(1.0, 0.5, -0.5, 1.0),   vec4(-1.0, 0.5, -0.5, 1.0), // red face ends here
+        vec4(-1.0, -0.5, 0.5, 1.0),  vec4(1.0, -0.5, 0.5, 1.0),  // Purple face starts here
+        vec4(1.0, 0.5, 0.5, 1.0),    vec4(-1.0, 0.5, 0.5, 1.0),  // Purple face ends here
     };
     body = Cuboid(carVertices);
 
@@ -34,6 +34,15 @@ Car::Car(const vec4& initialPosition)
     };
     rightHeadlight = Cuboid(rightHeadlightVertices);
 
+     // Tail light vertices
+    vec4 tailLightVertices[8] = {
+        vec4(-0.5, 0.0, 0.5, 1.0), vec4(0.5, 0.0, 0.5, 1.0),  // Bottom edge
+        vec4(0.5, 0.2, 0.5, 1.0), vec4(-0.5, 0.2, 0.5, 1.0),  // Top edge
+        vec4(-0.5, 0.0, 0.45, 1.0), vec4(0.5, 0.0, 0.45, 1.0), // Back depth
+        vec4(0.5, 0.2, 0.45, 1.0), vec4(-0.5, 0.2, 0.45, 1.0), // Back depth
+    };
+    tailLight = Cuboid(tailLightVertices);
+
     // Tires (4 cylinders)
     for (int i = 0; i < 4; ++i) {
         Cylinder tire(0.3, 0.1, 16); // Radius = 0.3, Height = 0.1, 16 segments
@@ -45,6 +54,7 @@ void Car::init() {
     body.init();
     leftHeadlight.init();
     rightHeadlight.init();
+    tailLight.init();  // Initialize the tail light
     for (auto& tire : tires) {
         tire.init();
     }
@@ -84,11 +94,11 @@ void Car::stop() {
 }
 
 void Car::turnLeft() {
-    angle += 5.0f; // Turn by 5 degrees
+    angle += 2.0f; // Turn by 5 degrees
 }
 
 void Car::turnRight() {
-    angle -= 5.0f; // Turn by 5 degrees
+    angle -= 2.0f; // Turn by 5 degrees
 }
 
 vec4 Car::getPosition() const {
@@ -128,6 +138,12 @@ void Car::render(GLint modelLoc, GLint faceColourLoc) {
     mat4 rightHeadlightTransform = bodyTransform *
                                    Translate(1.5, 0.1, -0.1); // Position on cyan face
     rightHeadlight.render(modelLoc, faceColourLoc, rightHeadlightTransform);
+
+     // Render the tail light
+    mat4 tailLightTransform = bodyTransform *
+                              Translate(-1.5, -0.1, -0.5); // Slightly inside the back face
+    glUniform4f(faceColourLoc, 1.0f, 0.0f, 0.0f, 1.0f); // Red color for the tail light
+    tailLight.render(modelLoc, faceColourLoc, tailLightTransform);
 
     // Render the tires
     std::vector<vec4> tireOffsets = {

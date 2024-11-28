@@ -1,6 +1,6 @@
 # Compiler and flags
 CC = g++
-CFLAGS = -Iinclude -std=c++11 -g -Wall
+CFLAGS = -Iinclude -std=c++11 -g -Wall -Wextra -pedantic
 LIBS = -lglut -lGLEW -lGL -lGLU
 
 # Targets
@@ -20,11 +20,11 @@ testCar: $(TESTCAR_OBJECTS)
 	$(CC) $(CFLAGS) -o testCar $(TESTCAR_OBJECTS) $(LIBS)
 
 # Compile main file
-main.o: main.cc Cuboid.h Car.h Cylinder.h BoundingBox.h
+main.o: main.cc
 	$(CC) $(CFLAGS) -c main.cc
 
 # Compile testCar file
-testCar.o: testCar.cc Car.h Cuboid.h Cylinder.h BoundingBox.h
+testCar.o: testCar.cc
 	$(CC) $(CFLAGS) -c testCar.cc
 
 # Compile Car class
@@ -57,4 +57,4 @@ check-testCar: testCar
 
 # Clean rule to remove all generated files
 clean:
-	rm -f $(TARGETS) *.o *~
+	rm -f $(TARGETS) *.o *~ core

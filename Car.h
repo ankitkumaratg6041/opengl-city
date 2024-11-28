@@ -12,6 +12,7 @@ private:
     Cuboid body;
     Cuboid leftHeadlight;
     Cuboid rightHeadlight;
+    Cuboid tailLight;
     std::vector<Cylinder> tires;
 
     vec4 position;
