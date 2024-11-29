@@ -6,7 +6,11 @@ inline float radians(float degrees) {
 }
 
 Car::Car(const vec4& initialPosition)
-    : position(initialPosition), angle(0.0f), speed(0.0f), isReversing(false) {
+    : position(initialPosition), angle(0.0f), speed(0.0f), isReversing(false), wheelRadius(0.5f), wheelRotationAngle(0.0f) , isTireRotationActive(false),
+      tireRotationSpeed(5.0f), isTireRotationForward(false) {
+
+    wheelCircumference = 2.0f * M_PI * wheelRadius; // Calculate the circumference
+
     // Main car body (cuboid)
     vec4 carVertices[8] = {
         vec4(-1.0, -0.5, -0.5, 1.0), vec4(1.0, -0.5, -0.5, 1.0), // red face starts here 
@@ -84,6 +88,9 @@ void Car::moveForward(const std::vector<BoundingBox>& buildingBoxes) {
     // Check for collision
     if (isCollision(getBoundingBox(), buildingBoxes)) {
         position = previousPosition; // Revert movement
+    }else {
+        // Rotate tires in the forward direction
+        rotateTiresForward();
     }
 
     isReversing = false; // Reset the flag when moving forward
@@ -105,9 +112,9 @@ void Car::moveReverse(const std::vector<BoundingBox>& buildingBoxes) {
     isReversing = true; // Set the flag to true when reversing
 }
 
-
 void Car::stop() {
     speed = 0.0f;
+    stopTireRotation(); // Stop tire rotation when the car stops
 }
 
 void Car::turnLeft() {
@@ -134,6 +141,43 @@ bool Car::getReversing() const {
     return isReversing;
 }
 
+void Car::toggleTireRotation() {
+    isTireRotationActive = !isTireRotationActive; // Toggle the flag
+}
+
+void Car::toggleTireRotationDirection() {
+    isTireRotationForward = !isTireRotationForward; // Toggle direction
+}
+
+void Car::rotateTiresBackward() {
+    isTireRotationActive = true;       // Enable tire rotation
+    isTireRotationForward = true;    // Set direction to backward
+}
+
+void Car::rotateTiresForward() {
+    isTireRotationActive = true;       // Enable tire rotation
+    isTireRotationForward = false;     // Set direction to forward
+}
+
+void Car::stopTireRotation() {
+    isTireRotationActive = false;      // Stop tire rotation
+}
+
+
+void Car::updateWheelRotation() {
+    if (isTireRotationActive) {
+        if (isTireRotationForward) {
+            wheelRotationAngle += tireRotationSpeed; // Forward rotation
+        } else {
+            wheelRotationAngle -= tireRotationSpeed; // Backward rotation
+        }
+        wheelRotationAngle = fmod(wheelRotationAngle, 360.0f); // Keep angle in range
+    }
+}
+
+bool Car::isTireRotating() const {
+    return isTireRotationActive;
+}
 
 BoundingBox Car::getBoundingBox() const {
     vec4 localMin(-.0, -0.5, -0.5, 1.0); // Local bounding box min
@@ -147,6 +191,20 @@ BoundingBox Car::getBoundingBox() const {
 
     return BoundingBox{vec3(globalMin.x, globalMin.y, globalMin.z),
                        vec3(globalMax.x, globalMax.y, globalMax.z)};
+}
+
+bool Car::detectCollision(const vec4& newPosition, const std::vector<BoundingBox>& buildingBoxes) {
+    BoundingBox carBoundingBox(
+        newPosition - vec4(1.0f, 0.5f, 1.0f, 0.0f), // Min corner of the car's bounding box
+        newPosition + vec4(1.0f, 0.5f, 1.0f, 0.0f)  // Max corner of the car's bounding box
+    );
+
+    for (const BoundingBox& buildingBox : buildingBoxes) {
+        if (carBoundingBox.intersects(buildingBox)) {
+            return true; // Collision detected
+        }
+    }
+    return false; // No collision
 }
 
 void Car::render(GLint modelLoc, GLint faceColourLoc) {
@@ -209,7 +267,9 @@ void Car::render(GLint modelLoc, GLint faceColourLoc) {
 
     for (size_t i = 0; i < tires.size(); ++i) {
         mat4 tireTransform = bodyTransform * Translate(
-            tireOffsets[i].x, tireOffsets[i].y, tireOffsets[i].z) * RotateX(90.0f);
+                            tireOffsets[i].x, tireOffsets[i].y, tireOffsets[i].z) *
+                            RotateX(90.0f) * // Ensure tires are standing upright
+                            RotateY(wheelRotationAngle);
         tires[i].render(modelLoc, faceColourLoc, tireTransform);
     }
 }

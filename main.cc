@@ -16,6 +16,8 @@ inline float radians(float degrees) {
 // Shader program
 GLuint program;
 
+int cameraViewMode = 0; // 0 = default view, 1 = top-corner view
+
 std::vector<vec4> cuboidPositions;
 std::unique_ptr<Car> car; // Initialize car at the center of the city
 std::vector<Cuboid> cuboids;
@@ -216,7 +218,7 @@ void init() {
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glEnable(GL_DEPTH_TEST);
     // Initialize the Car object AFTER OpenGL context is ready
-    car = std::unique_ptr<Car>(new Car(vec4(0.0, 0.0, 0.0, 1.0)));
+    car = std::unique_ptr<Car>(new Car(vec4(4.0, 0.0, 0.0, 1.0)));
     car->init();
 
     // Create and initialize vertical buildings
@@ -270,13 +272,25 @@ void display() {
     // Compute camera position relative to the car
     float cameraDistance = 20.0f;  // Distance behind the car
     float cameraHeight = 3.0f;    // Height above the car
-
-
-     vec4 cameraPosition(
-        carPosition.x - 10.0f * cos(radians(carAngle)),  // Behind the car along its angle
-        carPosition.y + 2.5f,                            // Above the car
-        carPosition.z + 12.0f * sin(radians(carAngle)),  // Adjust z based on angle
-        1.0);
+    
+    vec4 cameraPosition;
+    if (cameraViewMode == 0) {
+        // Default view (behind the car)
+        cameraPosition = vec4(
+            carPosition.x - 10.0f * cos(radians(carAngle)),
+            carPosition.y + 2.5f,
+            carPosition.z + 12.0f * sin(radians(carAngle)),
+            1.0
+        );
+    } else if (cameraViewMode == 1) {
+        // Top-corner view (slightly above and to the side of the car)
+        cameraPosition = vec4(
+            carPosition.x - 10.0f * cos(radians(carAngle + 45.0f)),
+            carPosition.y + 3.0f,
+            carPosition.z + 12.0f * sin(radians(carAngle + 45.0f)),
+            1.0
+        );
+    }
 
         // Compute LookAt target to focus on the car
     mat4 view = LookAt(
@@ -397,6 +411,11 @@ void display() {
 void idle() {
     static int frameCount = 0; // Frame counter to control timing
 
+    // Update tire rotation through the Car class
+    if (car->isTireRotating()) {
+        car->updateWheelRotation();
+    }
+
     // Change light every 180 frames (~3 seconds at 60 FPS)
     if (frameCount % 180 == 0) {
         for (TrafficLight& trafficLight : trafficLights) {
@@ -416,11 +435,16 @@ void keyboardControlHandler(unsigned char key, int x, int y) {
     switch (key) {
         case 'w': // Move forward
             car->moveForward(buildingBoxes);
+            car->rotateTiresForward(); // Ensure tires rotate forward
             car->setReversing(false); // Ensure tail light is not red when moving forward
             break;
         case 's': // Reverse
             car->setReversing(true); // Set the reversing flag
+            car->rotateTiresBackward(); // Ensure tires rotate backward
             car->moveReverse(buildingBoxes);
+            break;
+        case 'v': // Toggle camera view
+            cameraViewMode = (cameraViewMode + 1) % 2; // Toggle between 0 and 1
             break;
         case 27: // Escape key to exit
             exit(0);
@@ -431,6 +455,16 @@ void keyboardControlHandler(unsigned char key, int x, int y) {
 
 void keyboardUpControlHandler(unsigned char key, int x, int y) {
     keyState[key] = false; // Mark the key as released
+
+    switch (key) {
+        case 'w': // Forward key released
+        case 's': // Reverse key released
+            car->stopTireRotation(); // Stop the tire rotation
+            car->stop();             // Stop the car movement
+            break;
+        default:
+            break;
+    }
 
     // Handle specific key releases
     if (key == 's') {
