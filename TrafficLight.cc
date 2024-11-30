@@ -31,26 +31,11 @@ TrafficLight::TrafficLight(const vec4& position)
         vec4(0.5, 5.0, 0.3, 1.0),   vec4(-0.5, 5.0, 0.3, 1.0),
     };
     box = Cuboid(boxVertices, grayColor); // Use gray color for the box
-
-    // // Create the lights (red, yellow, green)
-    // float lightSize = 0.2f; // Adjusted for better spacing inside the box
-    // for (int i = 0; i < 3; ++i) {
-    //     vec4 lightVertices[8] = {
-    //         vec4(-lightSize, 0.0, -lightSize, 1.0), vec4(lightSize, 0.0, -lightSize, 1.0),
-    //         vec4(lightSize, lightSize, -lightSize, 1.0), vec4(-lightSize, lightSize, -lightSize, 1.0),
-    //         vec4(-lightSize, 0.0, lightSize, 1.0), vec4(lightSize, 0.0, lightSize, 1.0),
-    //         vec4(lightSize, lightSize, lightSize, 1.0), vec4(-lightSize, lightSize, lightSize, 1.0),
-    //     };
-    //     lights[i] = Cuboid(lightVertices);
-    // }
 }
 
 void TrafficLight::init() {
     pole.init();
     box.init();
-    // for (int i = 0; i < 3; ++i) {
-    //     lights[i].init();
-    // }
 }
 
 void TrafficLight::render(GLint modelLoc, GLint faceColourLoc) {

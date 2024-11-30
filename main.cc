@@ -17,6 +17,7 @@ inline float radians(float degrees) {
 GLuint program;
 
 int cameraViewMode = 0; // 0 = default view, 1 = top-corner view, 2 = overhead view
+bool isMoving = false; // Global variable to track car movement 
 
 std::vector<vec4> cuboidPositions;
 std::unique_ptr<Car> car; // Initialize car at the center of the city
@@ -25,6 +26,8 @@ std::vector<BoundingBox> buildingBoxes;
 std::vector<TrafficLight> trafficLights;
 
 bool keyState[256] = {false}; // Array to track key states
+// Array to track arrow key states (256 for ASCII keys + special keys)
+bool specialKeyState[256] = {false};
 
 
 float cameraAngleX = 0.0; // Rotation around the vertical axis (left/right)
@@ -60,27 +63,6 @@ int cityLayout[gridRows][gridCols] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 };
 
-// Positions for vertical buildings
-// vec4 verticalPositions[7] = {
-//     vec4(-3.0, 0.0, 2.0, 1.0),
-//     vec4(-1.5, 0.0, 2.5, 1.0),
-//     vec4(0.0, 0.0, 3.0, 1.0),
-//     vec4(1.5, 0.0, 2.0, 1.0),
-//     vec4(3.0, 0.0, 1.0, 1.0),
-//     vec4(0.0, 0.0, 0.0, 1.0),
-//     vec4(-2.0, 0.0, -1.0, 1.0)
-// };
-
-// Positions for horizontal buildings
-// vec4 horizontalPositions[5] = {
-//     vec4(-3.0, 0.0, -3.0, 1.0),
-//     vec4(-1.0, 0.0, -3.5, 1.0),
-//     vec4(1.0, 0.0, -3.0, 1.0),
-//     vec4(3.0, 0.0, -2.5, 1.0),
-//     vec4(0.0, 0.0, -4.0, 1.0)
-// };
-
-
 void init() {
     program = InitShader("vshader.glsl", "fshader.glsl");
     glUseProgram(program);
@@ -109,29 +91,6 @@ void init() {
         vec4(0.0, 0.0, 1.0, 1.0)   // Blue
     };
 
-    // Define vertical and horizontal cuboid vertices
-    // Building dimensions
-    // vec4 verticalPoints[8] = {
-    //     vec4(-0.5, -1.0, -0.5, 1.0), vec4(0.5, -1.0, -0.5, 1.0),
-    //     vec4(0.5, 1.5, -0.5, 1.0), vec4(-0.5, 1.5, -0.5, 1.0),
-    //     vec4(-0.5, -1.0, 0.5, 1.0), vec4(0.5, -1.0, 0.5, 1.0),
-    //     vec4(0.5, 1.0, 0.5, 1.0), vec4(-0.5, 1.5, 0.5, 1.0)
-    // };
-
-    // vec4 horizontalPoints[8] = {
-    //     vec4(-0.5, -0.5, -1.0, 1.0), vec4(0.5, -0.5, -1.0, 1.0),
-    //     vec4(0.5, -0.5, 1.0, 1.0), vec4(-0.5, -0.5, 1.0, 1.0),
-    //     vec4(-0.5, 0.5, -1.0, 1.0), vec4(0.5, 0.5, -1.0, 1.0),
-    //     vec4(0.5, 0.5, 1.0, 1.0), vec4(-0.5, 0.5, 1.0, 1.0)
-    // };
-
-    // Define road size
-    // vec4 roadPoints[8] = {
-    //     vec4(-1.0, -0.05, -1.0, 1.0), vec4(1.0, -0.05, -1.0, 1.0),
-    //     vec4(1.0, -0.05, 1.0, 1.0), vec4(-1.0, -0.05, 1.0, 1.0),
-    //     vec4(-1.0, 0.05, -1.0, 1.0), vec4(1.0, 0.05, -1.0, 1.0),
-    //     vec4(1.0, 0.05, 1.0, 1.0), vec4(-1.0, 0.05, 1.0, 1.0)
-    // };
      float cellSize = 6.0f;
 
     // Collect all possible traffic light positions (intersections)
@@ -220,49 +179,43 @@ void init() {
     // Initialize the Car object AFTER OpenGL context is ready
     car = std::unique_ptr<Car>(new Car(vec4(4.0, 0.0, 0.0, 1.0)));
     car->init();
+}
 
-    // Create and initialize vertical buildings
-    // for (int i = 0; i < 7; i++) {
-    //     Cuboid cuboid(verticalPoints);
-    //     cuboid.init();
-    //     cuboids.push_back(cuboid);
-    //     cuboidPositions.push_back(verticalPositions[i]);
-    // }
+void updateMovementState() {
+    // Check if the car is moving based on key states
+    isMoving = keyState['w'] || keyState['s'] || specialKeyState[GLUT_KEY_UP] || specialKeyState[GLUT_KEY_DOWN];
+}
 
-    // // Create and initialize horizontal buildings
-    // for (int i = 0; i < 5; i++) {
-    //     Cuboid cuboid(horizontalPoints);
-    //     cuboid.init();
-    //     cuboids.push_back(cuboid);
-    //     cuboidPositions.push_back(horizontalPositions[i]);
-    // }
+void handleMovement() {
+    // Track if car is reversing
+    bool isReversing = keyState['s'] || specialKeyState[GLUT_KEY_DOWN];
+    // Check key states for both normal and special keys
+    if (keyState['w'] || specialKeyState[GLUT_KEY_UP]) {
+        car->moveForward(buildingBoxes); // Move forward
+        car->rotateTiresForward();       // Rotate tires forward
+        car->setReversing(false);        // Ensure tail light is off for forward movement
+    }
+    if (keyState['s'] || specialKeyState[GLUT_KEY_DOWN]) {
+        car->setReversing(true);         // Enable reversing light
+        car->rotateTiresBackward();     // Rotate tires backward
+        car->moveReverse(buildingBoxes); // Move backward
+    }
+    if (!isReversing) {
+        car->setReversing(false);        // Turn off reversing light if not moving backward
+    }
+    if ((keyState['a'] || specialKeyState[GLUT_KEY_LEFT]) && isMoving) {
+        car->turnLeft(); // Turn left only if the car is moving
+    }
+    if ((keyState['d'] || specialKeyState[GLUT_KEY_RIGHT]) && isMoving) {
+        car->turnRight(); // Turn right only if the car is moving
+    }
 }
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Check for movement and turning
-    bool isMoving = false;
-
-    if (keyState['w']) {
-        car->moveForward(buildingBoxes); // Move forward
-        isMoving = true; // Mark as moving
-        car->setReversing(false); // Ensure tail light is not red when moving forward
-    }
-    if (keyState['s']) {
-        car->moveReverse(buildingBoxes); // Move backward
-        isMoving = true; // Mark as moving
-        car->setReversing(true); // Set tail light to red
-    }
-    if (!keyState['s']) {
-        car->setReversing(false); // Reset tail light to white when 's' is released
-    }
-    if (keyState['a'] && isMoving) {
-        car->turnLeft(); // Rotate car to the left while moving
-    }
-    if (keyState['d'] && isMoving) {
-        car->turnRight(); // Rotate car to the right while moving
-    }
+     // Continuously handle movement for smoother updates
+    handleMovement();
 
     // Compute camera position relative to the car
     vec4 carPosition = car->getPosition();
@@ -334,26 +287,6 @@ void display() {
         );
     }
 
-        // Compute LookAt target to focus on the car
-    // mat4 view = LookAt(
-    //     cameraPosition,               // Camera position
-    //     vec4(carPosition.x, carPosition.y, carPosition.z, 1.0),                  // Look at the car
-    //     vec4(0.0, 1.0, 0.0, 0.0));    // Up vector
-
-    // vec4 cameraPosition = vec4(
-    //     carPosition.x - cameraDistance * cos(radianAngle),
-    //     carPosition.y + cameraHeight,
-    //     carPosition.z + cameraDistance * sin(radianAngle),
-    //     1.0
-    // );
-
-     // Compute LookAt target to focus on the car
-    // mat4 view = LookAt(
-    //     cameraPosition,
-    //     vec4(carPosition.x, carPosition.y, carPosition.z, 1.0),
-    //     vec4(0.0, 0.0, -1.0, 0.0)
-    // );
-
      // Update the view matrix uniform
     glUniformMatrix4fv(glGetUniformLocation(program, "uView"), 1, GL_TRUE, view);
 
@@ -373,82 +306,84 @@ void display() {
     // Render the car
     car->render(modelLoc, faceColourLoc);
 
-    // Update the view matrix dynamically based on camera position
-    // mat4 view = LookAt(
-    //     vec4(cameraDistance * cos(radians(cameraAngleX)) * cos(radians(cameraAngleY)),
-    //          cameraDistance * sin(radians(cameraAngleY)),
-    //          cameraDistance * sin(radians(cameraAngleX)) * cos(radians(cameraAngleY)),
-    //          1.0),
-    //     vec4(0.0, 0.0, 0.0, 1.0), // Look at the center of the city
-    //     vec4(0.0, 1.0, 0.0, 0.0)  // Up vector
-    // );
-    // glUniformMatrix4fv(glGetUniformLocation(program, "uView"), 1, GL_TRUE, view);
-
-
     glutSwapBuffers();
 }
 
+void keyboardControlHandler(unsigned char key, int x, int y) {
+    keyState[key] = true; // Mark the key as pressed
 
-// void mouseControlHandler(int button, int state, int x, int y) {
-//     if (state == GLUT_DOWN) {
-//         if (button == GLUT_LEFT_BUTTON) {
-//             cameraAngleX -= 5.0; // Rotate left
-//         } else if (button == GLUT_RIGHT_BUTTON) {
-//             cameraAngleX += 5.0; // Rotate right
-//         }
-//         glutPostRedisplay(); // Request a redraw
-//     }
-// }
+    switch (key) {
+        case 'w':
+        case 's':
+        case 'a':
+        case 'd':
+            updateMovementState();
+            handleMovement();
+            break;
+        case 27: // Escape key to exit
+            exit(0);
+    }
 
+    glutPostRedisplay(); // Trigger a redraw
+}
 
-// void keyboardControlHandler(unsigned char key, int x, int y) {
-//     switch (key) {
-//         case 'w': // Move the camera to a top-down view
-//             cameraAngleY += 5.0;
-//             if (cameraAngleY > 90.0) cameraAngleY = 90.0; // Limit to directly above
-//             break;
-//         case 's': // Move the camera downward
-//             cameraAngleY -= 5.0;
-//             if (cameraAngleY < -90.0) cameraAngleY = -90.0; // Limit to below
-//             break;
-//         case 'a': // Move the camera left
-//             cameraAngleX -= 5.0;
-//             break;
-//         case 'd': // Move the camera right
-//             cameraAngleX += 5.0;
-//             break;
-//         case '+': // Zoom in
-//             cameraDistance -= 1.0;
-//             if (cameraDistance < 2.0) cameraDistance = 2.0; // Prevent getting too close
-//             break;
-//         case '-': // Zoom out
-//             cameraDistance += 1.0;
-//             break;
-//         default:
-//             break;
-//     }
-//     glutPostRedisplay(); // Request a redraw
-// }
+void keyboardUpControlHandler(unsigned char key, int x, int y) {
+    keyState[key] = false; // Mark the key as released
 
-// void keyboardControlHandler(unsigned char key, int x, int y) {
-//     switch (key) {
-//         case 'w': // Move car forward
-//             car->moveForward(buildingBoxes);
-//             break;
-//         case 's': // Move car backward
-//             car->moveReverse(buildingBoxes);
-//             break;
-//         case 'a': // Turn car left
-//             car->turnLeft();
-//             break;
-//         case 'd': // Turn car right
-//             car->turnRight();
-//             break;
-//         case 27: // Escape key to exit
-//             exit(0);
-//     }
-//     glutPostRedisplay();
-// }
+    if (key == 'w' || key == 's') {
+        updateMovementState();
+        if (!isMoving) {
+            car->stopTireRotation(); // Stop tire rotation
+            car->stop();             // Stop car movement
+        }
+    }
+
+    glutPostRedisplay(); // Trigger a redraw
+}
+
+void specialKeyHandler(int key, int x, int y) {
+    specialKeyState[key] = true; // Mark the key as pressed
+
+    switch (key) {
+        case GLUT_KEY_F1: // FOR DEFAULT VIEW
+            cameraViewMode = 0;
+            break;
+        case GLUT_KEY_F2: // Overhead view
+            cameraViewMode = 2;
+            break;
+        case GLUT_KEY_F3: // top corner view
+            cameraViewMode = 1;
+            break;
+        case GLUT_KEY_F4: // driver view
+            cameraViewMode = 3;
+            break;
+        case GLUT_KEY_UP:
+        case GLUT_KEY_DOWN:
+        case GLUT_KEY_LEFT:
+        case GLUT_KEY_RIGHT:
+            updateMovementState();
+            handleMovement();
+            break;
+        default:
+            break;
+    }
+
+    glutPostRedisplay(); // Trigger a redraw
+}
+
+void specialKeyUpHandler(int key, int x, int y) {
+    specialKeyState[key] = false; // Mark the key as released
+
+    if (key == GLUT_KEY_UP || key == GLUT_KEY_DOWN) {
+        updateMovementState();
+        if (!isMoving) {
+            car->stopTireRotation(); // Stop tire rotation
+            car->stop();             // Stop car movement
+        }
+    }
+
+    glutPostRedisplay(); // Trigger a redraw
+}
 
 void idle() {
     static int frameCount = 0; // Frame counter to control timing
@@ -469,81 +404,6 @@ void idle() {
     glutPostRedisplay(); // Trigger a redraw
 }
 
-void specialKeyHandler(int key, int x, int y) {
-    switch (key) {
-        case GLUT_KEY_F1: // F1 for default view
-            cameraViewMode = 0; // Set to default view
-            break;
-        case GLUT_KEY_F2: // Overhead view
-            cameraViewMode = 2;
-            break;
-        case GLUT_KEY_F3: // Check if the F3 key is pressed
-            cameraViewMode = (cameraViewMode + 1) % 2; // Toggle between 0 and 1
-            break;
-        case GLUT_KEY_F4: // Driver view
-            cameraViewMode = 3;
-            break;
-        default:
-            break;
-    }
-    glutPostRedisplay(); // Trigger a redraw
-}
-
-void keyboardControlHandler(unsigned char key, int x, int y) {
-    keyState[key] = true; // Mark the key as pressed
-
-    // Handle specific key presses
-    switch (key) {
-        case 'w': // Move forward
-            car->moveForward(buildingBoxes);
-            car->rotateTiresForward(); // Ensure tires rotate forward
-            car->setReversing(false); // Ensure tail light is not red when moving forward
-            break;
-        case 's': // Reverse
-            car->setReversing(true); // Set the reversing flag
-            car->rotateTiresBackward(); // Ensure tires rotate backward
-            car->moveReverse(buildingBoxes);
-            break;
-        case 27: // Escape key to exit
-            exit(0);
-    }
-
-    glutPostRedisplay(); // Trigger a redraw
-}
-
-void keyboardUpControlHandler(unsigned char key, int x, int y) {
-    keyState[key] = false; // Mark the key as released
-
-    switch (key) {
-        case 'w': // Forward key released
-        case 's': // Reverse key released
-            car->stopTireRotation(); // Stop the tire rotation
-            car->stop();             // Stop the car movement
-            break;
-        default:
-            break;
-    }
-
-    // Handle specific key releases
-    if (key == 's') {
-        car->setReversing(false); // Reset the reversing flag
-    }
-
-    glutPostRedisplay(); // Trigger a redraw
-}
-
-
-
-// int lastMouseX = 0; // Track the last X position of the mouse
-
-// void mouseDragHandler(int x, int y) {
-//     cameraAngleX += (x - lastMouseX) * 0.1; // Adjust rotation sensitivity
-//     lastMouseX = x;
-//     glutPostRedisplay(); // Request a redraw
-// }
-
-
-
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
@@ -558,6 +418,7 @@ int main(int argc, char** argv) {
     glutKeyboardFunc(keyboardControlHandler); // For key press
     glutKeyboardUpFunc(keyboardUpControlHandler); // For key release
     glutSpecialFunc(specialKeyHandler); // For Special keys
+    glutSpecialUpFunc(specialKeyUpHandler); // Handle special key releases
     glutIdleFunc(display); // Continuously update display for smooth movement
     glutIdleFunc(idle);
     // glutMotionFunc(mouseDragHandler);
