@@ -16,7 +16,7 @@ inline float radians(float degrees) {
 // Shader program
 GLuint program;
 
-int cameraViewMode = 0; // 0 = default view, 1 = top-corner view
+int cameraViewMode = 0; // 0 = default view, 1 = top-corner view, 2 = overhead view
 
 std::vector<vec4> cuboidPositions;
 std::unique_ptr<Car> car; // Initialize car at the center of the city
@@ -274,6 +274,9 @@ void display() {
     float cameraHeight = 3.0f;    // Height above the car
     
     vec4 cameraPosition;
+
+    mat4 view;
+
     if (cameraViewMode == 0) {
         // Default view (behind the car)
         cameraPosition = vec4(
@@ -281,6 +284,11 @@ void display() {
             carPosition.y + 2.5f,
             carPosition.z + 12.0f * sin(radians(carAngle)),
             1.0
+        );
+        view = LookAt(
+            cameraPosition,
+            vec4(carPosition.x, carPosition.y, carPosition.z, 1.0), // Look at the car
+            vec4(0.0, 1.0, 0.0, 0.0) // Up vector
         );
     } else if (cameraViewMode == 1) {
         // Top-corner view (slightly above and to the side of the car)
@@ -290,13 +298,47 @@ void display() {
             carPosition.z + 12.0f * sin(radians(carAngle + 45.0f)),
             1.0
         );
+        view = LookAt(
+            cameraPosition,
+            vec4(carPosition.x, carPosition.y, carPosition.z, 1.0), // Look at the car
+            vec4(0.0, 1.0, 0.0, 0.0) // Up vector
+        );
+    } else if (cameraViewMode == 2) {
+        // Overhead view (directly above the car)
+        cameraPosition = vec4(
+            carPosition.x,        // X position of the car
+            carPosition.y + 20.0f, // Height directly above the car
+            carPosition.z,        // Z position of the car
+            1.0
+        );
+        view = LookAt(
+            cameraPosition,
+            vec4(carPosition.x, carPosition.y, carPosition.z, 1.0), // Look at the car
+            vec4(0.0, 0.0, -1.0, 0.0) // Downward direction for overhead
+        );
+    } else if (cameraViewMode == 3) {
+        // Driver view: position inside the car at the driver's seat
+        cameraPosition = vec4(
+            carPosition.x + 1.0f * cos(radians(carAngle)),  // Offset to the front
+            carPosition.y + 1.5f,                          // Slightly above the base
+            carPosition.z - 0.5f * sin(radians(carAngle)), // Offset slightly backward
+            1.0
+        );
+        view = LookAt(
+            cameraPosition,
+            vec4(carPosition.x + 5.0f * cos(radians(carAngle)),  // Look further ahead
+            carPosition.y + 1.5f,                          // Same height as the driver's position
+            carPosition.z - 5.0f * sin(radians(carAngle)), // Look straight in front
+            1.0), // Look at the car
+            vec4(0.0, 1.0, 0.0, 0.0) // Downward direction for overhead
+        );
     }
 
         // Compute LookAt target to focus on the car
-    mat4 view = LookAt(
-        cameraPosition,               // Camera position
-        vec4(carPosition.x, carPosition.y, carPosition.z, 1.0),                  // Look at the car
-        vec4(0.0, 1.0, 0.0, 0.0));    // Up vector
+    // mat4 view = LookAt(
+    //     cameraPosition,               // Camera position
+    //     vec4(carPosition.x, carPosition.y, carPosition.z, 1.0),                  // Look at the car
+    //     vec4(0.0, 1.0, 0.0, 0.0));    // Up vector
 
     // vec4 cameraPosition = vec4(
     //     carPosition.x - cameraDistance * cos(radianAngle),
@@ -309,7 +351,7 @@ void display() {
     // mat4 view = LookAt(
     //     cameraPosition,
     //     vec4(carPosition.x, carPosition.y, carPosition.z, 1.0),
-    //     vec4(0.0, 1.0, 0.0, 0.0)
+    //     vec4(0.0, 0.0, -1.0, 0.0)
     // );
 
      // Update the view matrix uniform
@@ -427,6 +469,25 @@ void idle() {
     glutPostRedisplay(); // Trigger a redraw
 }
 
+void specialKeyHandler(int key, int x, int y) {
+    switch (key) {
+        case GLUT_KEY_F1: // F1 for default view
+            cameraViewMode = 0; // Set to default view
+            break;
+        case GLUT_KEY_F2: // Overhead view
+            cameraViewMode = 2;
+            break;
+        case GLUT_KEY_F3: // Check if the F3 key is pressed
+            cameraViewMode = (cameraViewMode + 1) % 2; // Toggle between 0 and 1
+            break;
+        case GLUT_KEY_F4: // Driver view
+            cameraViewMode = 3;
+            break;
+        default:
+            break;
+    }
+    glutPostRedisplay(); // Trigger a redraw
+}
 
 void keyboardControlHandler(unsigned char key, int x, int y) {
     keyState[key] = true; // Mark the key as pressed
@@ -442,9 +503,6 @@ void keyboardControlHandler(unsigned char key, int x, int y) {
             car->setReversing(true); // Set the reversing flag
             car->rotateTiresBackward(); // Ensure tires rotate backward
             car->moveReverse(buildingBoxes);
-            break;
-        case 'v': // Toggle camera view
-            cameraViewMode = (cameraViewMode + 1) % 2; // Toggle between 0 and 1
             break;
         case 27: // Escape key to exit
             exit(0);
@@ -499,6 +557,7 @@ int main(int argc, char** argv) {
     // glutMouseFunc(mouseControlHandler);
     glutKeyboardFunc(keyboardControlHandler); // For key press
     glutKeyboardUpFunc(keyboardUpControlHandler); // For key release
+    glutSpecialFunc(specialKeyHandler); // For Special keys
     glutIdleFunc(display); // Continuously update display for smooth movement
     glutIdleFunc(idle);
     // glutMotionFunc(mouseDragHandler);

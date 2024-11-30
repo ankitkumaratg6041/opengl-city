@@ -81,7 +81,7 @@ void Car::moveForward(const std::vector<BoundingBox>& buildingBoxes) {
     vec4 previousPosition = position;
 
     // Attempt to move forward
-    speed = 0.1f;
+    speed = 0.2f;
     position.x += speed * cos(radians(angle));
     position.z -= speed * sin(radians(angle));
 
