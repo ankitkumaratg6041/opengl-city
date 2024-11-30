@@ -48,6 +48,9 @@ Cuboid::Cuboid(const vec4 vertices[8], const vec4 faceColors[6]) {
         colour[i] = faceColors[i];
     }
     hasCustomColors = true; // Mark that custom colors are used
+
+    // Initialize windows
+    initWindows();
 }
 
 void Cuboid::setFaceColors(const vec4 newColors[6]) {
@@ -74,6 +77,71 @@ void Cuboid::init() {
         glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
     }
 }
+
+void Cuboid::renderWindows(GLint modelLoc, GLint faceColourLoc, const mat4& transform) {
+    for (size_t i = 0; i < windowVertices.size(); i += 4) {
+        glUniform4fv(faceColourLoc, 1, &windowColors[i / 4].x); // Set window color
+
+        // Apply cuboid's transformation to each window
+        mat4 windowTransform = transform;
+
+        glUniformMatrix4fv(modelLoc, 1, GL_TRUE, windowTransform);
+
+        glBegin(GL_TRIANGLES);
+        glVertex4fv(windowVertices[i]);     // Bottom-left
+        glVertex4fv(windowVertices[i + 1]); // Bottom-right
+        glVertex4fv(windowVertices[i + 2]); // Top-right
+
+        glVertex4fv(windowVertices[i]);     // Bottom-left
+        glVertex4fv(windowVertices[i + 2]); // Top-right
+        glVertex4fv(windowVertices[i + 3]); // Top-left
+        glEnd();
+    }
+}
+
+void Cuboid::initWindows() {
+    windowVertices.clear();
+    windowColors.clear();
+
+    // Define window depth offset and spacing
+    float windowDepthOffset = 0.02f; // Slightly offset from the face
+    float windowSpacing = 0.5f;      // Space between windows
+    float windowWidth = 0.4f;        // Width of each window
+    float windowHeight = 0.4f;       // Height of each window
+
+    // Define a semi-transparent blue color for the windows
+    vec4 glassColor(0.5f, 0.8f, 1.0f, 1.0f); // Glassy blue with full opacity
+
+    // Iterate through each face of the cuboid
+    for (int face = 0; face < 6; face++) {
+        vec4 v0 = point[face];     // First vertex of the face
+        vec4 v1 = point[(face + 1) % 4]; // Adjacent vertex on the same face
+        vec4 v2 = point[(face + 2) % 4]; // Opposite vertex
+        vec4 normal = normalize(cross(v1 - v0, v2 - v0)); // Calculate face normal
+
+        // Calculate face center
+        vec4 faceCenter = (v0 + v1 + v2 + point[(face + 3) % 4]) / 4.0f;
+
+        // Add multiple windows on the face
+        for (float x = -0.8f; x <= 0.8f; x += windowSpacing) {
+            for (float y = -0.8f; y <= 0.8f; y += windowSpacing) {
+                // Calculate window position
+                vec4 windowCenter = faceCenter + normal * windowDepthOffset +
+                                    vec4(x * windowWidth, y * windowHeight, 0.0f, 0.0f);
+
+                // Add vertices for this window
+                windowVertices.push_back(windowCenter + vec4(-windowWidth / 2, -windowHeight / 2, 0.0f, 1.0f)); // Bottom-left
+                windowVertices.push_back(windowCenter + vec4(windowWidth / 2, -windowHeight / 2, 0.0f, 1.0f));  // Bottom-right
+                windowVertices.push_back(windowCenter + vec4(windowWidth / 2, windowHeight / 2, 0.0f, 1.0f));   // Top-right
+                windowVertices.push_back(windowCenter + vec4(-windowWidth / 2, windowHeight / 2, 0.0f, 1.0f));  // Top-left
+
+                // Add color for this window
+                windowColors.push_back(glassColor);
+            }
+        }
+    }
+}
+
 
 void Cuboid::render(GLint modelLoc, GLint faceColourLoc, mat4 modelTransform) {
     glUniformMatrix4fv(modelLoc, 1, GL_TRUE, modelTransform);

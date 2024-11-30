@@ -297,10 +297,11 @@ void display() {
         trafficLight.render(modelLoc, faceColourLoc);
     }
 
-    // Render all cuboids
+    // Render all cuboids (buildings) and their windows
     for (size_t i = 0; i < cuboids.size(); i++) {
-        mat4 transform = Translate(cuboidPositions[i].x, cuboidPositions[i].y, cuboidPositions[i].z);
-        cuboids[i].render(modelLoc, faceColourLoc, transform);
+        mat4 buildingTransform = Translate(cuboidPositions[i].x, cuboidPositions[i].y, cuboidPositions[i].z);
+        cuboids[i].render(modelLoc, faceColourLoc, buildingTransform);       // Render building
+        cuboids[i].renderWindows(modelLoc, faceColourLoc, buildingTransform); // Render windows
     }
 
     // Render the car
