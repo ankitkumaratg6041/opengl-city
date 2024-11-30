@@ -75,6 +75,47 @@ void Car::init() {
     for (auto& tire : tires) {
         tire.init();
     }
+    initWindows();  // Initialize windows
+}
+
+void Car::initWindows() {
+    float bodyWidth = 1.0f;      // Half of car width
+    float bodyHeight = 0.5f;     // Half of car height
+    float bodyLength = 0.5f;     // Half of car length
+    float protrusion = 0.01f;    // Distance to make the windows stick out slightly
+    float windowHeightOffset = 0.15f;  // Leave some space above and below for front/rear windows
+    float sideWindowHeight = 0.2f;     // Reduced height for side windows
+    float sideWindowVerticalCenter = 0.0f; // Center the side windows vertically
+
+    // Front window (slightly out from +z face)
+    windowVertices.push_back(vec4(-bodyWidth + 0.05f, bodyHeight - windowHeightOffset, bodyLength + protrusion, 1.0)); // Top-left
+    windowVertices.push_back(vec4(bodyWidth - 0.05f, bodyHeight - windowHeightOffset, bodyLength + protrusion, 1.0));  // Top-right
+    windowVertices.push_back(vec4(bodyWidth - 0.05f, -bodyHeight + windowHeightOffset, bodyLength + protrusion, 1.0)); // Bottom-right
+    windowVertices.push_back(vec4(-bodyWidth + 0.05f, -bodyHeight + windowHeightOffset, bodyLength + protrusion, 1.0)); // Bottom-left
+
+    // Rear window (slightly out from -z face)
+    windowVertices.push_back(vec4(-bodyWidth + 0.05f, bodyHeight - windowHeightOffset, -bodyLength - protrusion, 1.0)); // Top-left
+    windowVertices.push_back(vec4(bodyWidth - 0.05f, bodyHeight - windowHeightOffset, -bodyLength - protrusion, 1.0));  // Top-right
+    windowVertices.push_back(vec4(bodyWidth - 0.05f, -bodyHeight + windowHeightOffset, -bodyLength - protrusion, 1.0)); // Bottom-right
+    windowVertices.push_back(vec4(-bodyWidth + 0.05f, -bodyHeight + windowHeightOffset, -bodyLength - protrusion, 1.0)); // Bottom-left
+
+    // Left window (flush with -x face, reduced vertical height)
+    windowVertices.push_back(vec4(-bodyWidth - protrusion, sideWindowVerticalCenter + sideWindowHeight, bodyLength - 0.05f, 1.0));  // Top-front
+    windowVertices.push_back(vec4(-bodyWidth - protrusion, sideWindowVerticalCenter + sideWindowHeight, -bodyLength + 0.05f, 1.0)); // Top-rear
+    windowVertices.push_back(vec4(-bodyWidth - protrusion, sideWindowVerticalCenter - sideWindowHeight, -bodyLength + 0.05f, 1.0)); // Bottom-rear
+    windowVertices.push_back(vec4(-bodyWidth - protrusion, sideWindowVerticalCenter - sideWindowHeight, bodyLength - 0.05f, 1.0));  // Bottom-front
+
+    // Right window (flush with +x face, reduced vertical height)
+    windowVertices.push_back(vec4(bodyWidth + protrusion, sideWindowVerticalCenter + sideWindowHeight, bodyLength - 0.05f, 1.0));   // Top-front
+    windowVertices.push_back(vec4(bodyWidth + protrusion, sideWindowVerticalCenter + sideWindowHeight, -bodyLength + 0.05f, 1.0));  // Top-rear
+    windowVertices.push_back(vec4(bodyWidth + protrusion, sideWindowVerticalCenter - sideWindowHeight, -bodyLength + 0.05f, 1.0)); // Bottom-rear
+    windowVertices.push_back(vec4(bodyWidth + protrusion, sideWindowVerticalCenter - sideWindowHeight, bodyLength - 0.05f, 1.0));  // Bottom-front
+
+    // Assign a semi-transparent blue color to all windows
+    vec4 glassColor(0.0, 0.5, 0.8, 0.5); // Glassy blue with transparency
+    for (size_t i = 0; i < windowVertices.size() / 4; ++i) {
+        windowColors.push_back(glassColor);
+    }
 }
 
 void Car::moveForward(const std::vector<BoundingBox>& buildingBoxes) {
@@ -213,6 +254,22 @@ void Car::render(GLint modelLoc, GLint faceColourLoc) {
 
     // Render the body of the car
     body.render(modelLoc, faceColourLoc, bodyTransform);
+
+    // Render the windows
+    for (size_t i = 0; i < windowVertices.size(); i += 4) {
+        mat4 windowTransform = bodyTransform;
+        glUniform4fv(faceColourLoc, 1, windowColors[i / 4]); // Set window color
+        // Render each quad as two triangles
+        glBegin(GL_TRIANGLES);
+        glVertex4fv(windowVertices[i]);     // Top-left
+        glVertex4fv(windowVertices[i + 1]); // Top-right
+        glVertex4fv(windowVertices[i + 2]); // Bottom-right
+
+        glVertex4fv(windowVertices[i]);     // Top-left
+        glVertex4fv(windowVertices[i + 2]); // Bottom-right
+        glVertex4fv(windowVertices[i + 3]); // Bottom-left
+        glEnd();
+    }
 
     // Render the headlights of the car
     mat4 leftHeadlightTransform = bodyTransform *

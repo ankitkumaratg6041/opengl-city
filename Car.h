@@ -14,6 +14,8 @@ private:
     Cuboid rightHeadlight;
     Cuboid tailLight;
     std::vector<Cylinder> tires;
+    std::vector<vec4> windowVertices; // Vertices for the windows
+    std::vector<vec4> windowColors;   // Colors for the windows
 
     vec4 position;
     float angle; // Rotation of the car
@@ -26,6 +28,7 @@ private:
     float tireRotationSpeed;   // Speed of tire rotation
     bool isTireRotationForward; // True for forward (clockwise), false for backward (anti-clockwise)
 
+    void initWindows(); // Initializes the car windows
     bool detectCollision(const vec4& newPosition, const std::vector<BoundingBox>& buildingBoxes);
 
 public:
